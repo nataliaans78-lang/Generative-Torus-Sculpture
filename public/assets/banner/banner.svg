@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Generative Light Sculpture banner">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070A16"/>
+      <stop offset="0.55" stop-color="#0B1A3A"/>
+      <stop offset="1" stop-color="#090B12"/>
+    </linearGradient>
+
+    <!-- Soft glow gradients -->
+    <radialGradient id="glowA" cx="50%" cy="45%" r="60%">
+      <stop offset="0" stop-color="#57B8FF" stop-opacity="0.55"/>
+      <stop offset="0.45" stop-color="#57B8FF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#57B8FF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="glowB" cx="55%" cy="55%" r="60%">
+      <stop offset="0" stop-color="#8A6CFF" stop-opacity="0.40"/>
+      <stop offset="0.5" stop-color="#8A6CFF" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#8A6CFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Torus stroke gradient -->
+    <linearGradient id="torusStroke" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#67D1FF" stop-opacity="0.15"/>
+      <stop offset="0.25" stop-color="#67D1FF" stop-opacity="0.85"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.75" stop-color="#9A7BFF" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#9A7BFF" stop-opacity="0.15"/>
+    </linearGradient>
+
+    <!-- Noise-ish grain using feTurbulence -->
+    <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 0.06 0"/>
+    </filter>
+
+    <!-- Soft bloom / glow -->
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <style>
+      /* Subtle movement (no JS) */
+      .floatA { animation: floatA 6.5s ease-in-out infinite; transform-origin: 600px 160px; }
+      .floatB { animation: floatB 8.2s ease-in-out infinite; transform-origin: 600px 160px; }
+      .spin   { animation: spin 10s linear infinite; transform-origin: 600px 160px; }
+      .pulse  { animation: pulse 4.8s ease-in-out infinite; }
+
+      @keyframes floatA { 0%,100% { transform: translate(0px, 0px); } 50% { transform: translate(0px, -6px);} }
+      @keyframes floatB { 0%,100% { transform: translate(0px, 0px); } 50% { transform: translate(0px, 5px);} }
+      @keyframes spin   { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);} }
+      @keyframes pulse  { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
+
+      /* Text look */
+      .title { font: 700 34px/1.1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; letter-spacing: 0.2px; }
+      .sub   { font: 500 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; opacity: 0.82; }
+      .meta  { font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; opacity: 0.70; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="320" fill="url(#bg)"/>
+
+  <!-- Ambient glows -->
+  <g class="floatA">
+    <circle cx="620" cy="150" r="170" fill="url(#glowA)"/>
+  </g>
+  <g class="floatB">
+    <circle cx="560" cy="190" r="190" fill="url(#glowB)"/>
+  </g>
+
+  <!-- Torus-like “generative” rings (parametric-ish with ellipses) -->
+  <g filter="url(#softGlow)" opacity="0.95">
+    <!-- outer ring -->
+    <g class="spin" opacity="0.55">
+      <ellipse cx="600" cy="165" rx="190" ry="92" fill="none" stroke="url(#torusStroke)" stroke-width="3.5"/>
+      <ellipse cx="600" cy="165" rx="165" ry="78" fill="none" stroke="url(#torusStroke)" stroke-width="2.2" opacity="0.65"/>
+    </g>
+
+    <!-- inner “knot” feel: offset rings -->
+    <g class="floatA pulse" opacity="0.7">
+      <ellipse cx="600" cy="165" rx="110" ry="54" fill="none" stroke="url(#torusStroke)" stroke-width="2.2"/>
+      <ellipse cx="615" cy="158" rx="128" ry="62" fill="none" stroke="url(#torusStroke)" stroke-width="1.6" opacity="0.65"/>
+      <ellipse cx="585" cy="174" rx="138" ry="66" fill="none" stroke="url(#torusStroke)" stroke-width="1.2" opacity="0.5"/>
+    </g>
+
+    <!-- light streaks -->
+    <g opacity="0.45">
+      <path d="M420 170 C520 120, 680 120, 780 170" fill="none" stroke="#A8E7FF" stroke-opacity="0.35" stroke-width="1.5"/>
+      <path d="M440 190 C540 240, 660 240, 760 190" fill="none" stroke="#B7A7FF" stroke-opacity="0.35" stroke-width="1.5"/>
+    </g>
+  </g>
+
+  <!-- Grain overlay -->
+  <rect width="1200" height="320" filter="url(#grain)" opacity="0.45"/>
+
+  <!-- Left text block (minimal, gallery-like) -->
+  <g transform="translate(60 92)">
+    <text class="title" x="0" y="0" fill="#EAF4FF">Generative Torus Sculpture</text>
+    <text class="sub" x="0" y="34" fill="#CFE6FF">Generative Light Sculpture — interactive 3D audio-reactive light study</text>
+    <text class="meta" x="0" y="66" fill="#B8D2FF">Three.js · Instancing · Bloom/Fog · Audio-reactive lighting</text>
+  </g>
+
+  <!-- A small “badge” on the right -->
+  <g transform="translate(975 56)" opacity="0.9">
+    <rect x="0" y="0" width="165" height="36" rx="18" fill="#0D1630" stroke="#2A4A8A" stroke-opacity="0.6"/>
+    <text x="82.5" y="23" text-anchor="middle" class="meta" fill="#D9E9FF">v1 · study</text>
+  </g>
+</svg>

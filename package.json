@@ -1,0 +1,28 @@
+{
+  "name": "generative-torus-sculpture",
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=18.18.0",
+    "npm": ">=9"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "serve": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "lint": "eslint \"src/**/*.js\" \"tests/**/*.js\"",
+    "format": "prettier --write \"**/*.{js,css,html,md,yml}\"",
+    "format:check": "prettier --check \"**/*.{js,css,html,md,yml}\""
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.2.5",
+    "vite": "^2.5.4",
+    "vitest": "^1.6.0"
+  },
+  "dependencies": {
+    "three": "0.132.2"
+  }
+}
