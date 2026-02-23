@@ -1,3 +1,7 @@
-module.exports = {
-  base: '/Generative-Torus-Sculpture/',
-};
+import { defineConfig } from 'vite'
+
+export default defineConfig({
+  build: {
+    outDir: 'build'
+  }
+})
