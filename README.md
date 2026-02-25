@@ -11,7 +11,7 @@
 
 ---
 
-## Artist statement
+## Artist Statement
 
 A field of toroidal forms becomes a study of repetition and controlled variation.  
 Light defines structure, while audio modulates intensity and rhythm.  
@@ -21,7 +21,17 @@ The system balances precision and motion — structure and energy.
 
 ---
 
-## Preview
+## 🎬 Full Video Preview (MP4 – High Quality)
+
+<p align="center">
+  <a href="https://github.com/nataliaans78-lang/Generative-Torus-Sculpture/releases/latest/download/GLS_optimized.mp4">
+    ▶ Download Full MP4 Preview
+  </a>
+</p>
+
+---
+
+## Preview (GIF)
 
 <p align="center">
   <img src="public/assets/img/GLS.gif" alt="Generative Light Sculpture — preview" width="900" />
@@ -53,8 +63,18 @@ The system balances precision and motion — structure and energy.
 
 ---
 
-## Run locally
+## Tech Stack
 
-```bash
-npm install
-npm run dev
+- Three.js
+- WebGL
+- InstancedMesh
+- Custom shader injection
+- Audio-reactive light modulation
+- Post-processing (Bloom, Fog)
+
+---
+
+## Project Type
+
+Experimental generative WebGL sculpture exploring light, repetition and spatial rhythm.  
+Created as an artistic + technical exploration of procedural form and atmosphere.
