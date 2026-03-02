@@ -21,6 +21,12 @@ The system balances precision and motion — structure and energy.
 
 ---
 
+
+## 🚀 Live Demo
+- **Page:** https://nataliaans78-lang.github.io/Generative-Torus-Sculpture/
+
+---
+
 ## 🎬 Full Video Preview (MP4 – High Quality)
 
 <p align="center">
