@@ -1,0 +1,24 @@
+node_modules/
+.DS_Store
+dist/
+dist-ssr
+public/assets/video/BL_proxy/
+*.local
+*.avi
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+
+# Tooling caches
+.eslintcache
+.stylelintcache
+.vite
+coverage/
