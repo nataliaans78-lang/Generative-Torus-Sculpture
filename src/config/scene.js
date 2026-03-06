@@ -9,8 +9,8 @@ export const CAMERA_SETTINGS = {
 export const SCENE_SETTINGS = {
   backgroundGradient: {
     topColor: '#050914',
-    middleColor: '#030612',
-    bottomColor: '#0a1c3a',
+    middleColor: '#04112a',
+    bottomColor: '#0a2147',
   },
 };
 
@@ -21,8 +21,8 @@ export const LIGHT_SETTINGS = {
     position: [4.4, 5.2, 3.6],
   },
   rim: {
-    color: 0x6a5cff,
-    intensity: 2.2,
+    color: 0x4f82ff,
+    intensity: 2.0,
     position: [-4.8, 2.8, -5.6],
   },
   fill: {
