@@ -146,7 +146,7 @@ export function createSceneControls({
   const rimSlider = createSlider({
     label: 'Rim Intensity',
     min: 0,
-    max: 6,
+    max: 8,
     step: 0.1,
     value: initialLighting.rimIntensity ?? 2.2,
     onInput: (value) => onLightingChange?.({ rimIntensity: value }),

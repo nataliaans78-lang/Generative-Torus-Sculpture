@@ -175,7 +175,7 @@ export function createTorusCluster(
 
   for (let i = 0; i < count; i += 1) {
     const scaleBase = 0.92 + hash(i) * 0.14;
-    scaleFactors[i] = i === heroIndex ? 1.3 : scaleBase;
+    scaleFactors[i] = i === heroIndex ? 1.35 : scaleBase;
     rotationVariance[i] = 0.87 + hash(i * 13 + 7) * 0.26;
     phases[i] = hash(i * 2) * Math.PI * 2;
     const iy = Math.floor(i / (nx * nz));

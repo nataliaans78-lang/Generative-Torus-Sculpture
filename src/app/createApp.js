@@ -27,8 +27,23 @@ import {
   STORAGE_KEYS,
 } from '../config/index.js';
 
+const isMobileDevice = () =>
+  /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+  window.matchMedia('(max-width: 768px)').matches;
+
+const getMobilePresetQuality = (presetKey = 'DEEP_BLUE') =>
+  presetKey === 'DEEP_BLUE' ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.LOW;
+
+const getPresetQuality = (presetKey = 'DEEP_BLUE') => {
+  if (isMobileDevice()) return getMobilePresetQuality(presetKey);
+  const HIGH_DEFAULT_PRESETS = new Set(['DEEP_BLUE', 'FLOW_SOFT', 'FLOW_STRONG']);
+  return HIGH_DEFAULT_PRESETS.has(presetKey) ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.MEDIUM;
+};
+const GLOBAL_ROTATION_SCALE = 0.7;
+
 function resolvedGridDimensions(gridCount) {
-  const count = Math.max(2, Math.min(5, Math.floor(gridCount ?? 3)));
+  const maxGrid = isMobileDevice() ? 2 : 5;
+  const count = Math.max(2, Math.min(maxGrid, Math.floor(gridCount ?? 3)));
   return {
     gridCount: count,
     nx: count + 1,
@@ -54,10 +69,7 @@ export function createApp() {
     return texture;
   };
 
-  const HIGH_DEFAULT_PRESETS = new Set(['DEEP_BLUE', 'FLOW_SOFT', 'FLOW_STRONG']);
-  const isHighDefaultPreset = (presetKey) => HIGH_DEFAULT_PRESETS.has(presetKey);
-  const getDefaultQuality = (presetKey = 'DEEP_BLUE') =>
-    isHighDefaultPreset(presetKey) ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.MEDIUM;
+  const getDefaultQuality = (presetKey = 'DEEP_BLUE') => getPresetQuality(presetKey);
   const sizes = { width: window.innerWidth, height: window.innerHeight };
   let torusCluster = null;
   const scene = createScene();
@@ -226,6 +238,11 @@ export function createApp() {
   const isPresetKey = (value) => typeof value === 'string' && Object.hasOwn(PRESETS, value);
   const isQualityLevel = (value) => Object.values(QUALITY_LEVELS).includes(value);
   const storedState = readStoredState() ?? createInitialStoredState();
+  if (isMobileDevice()) {
+    const mobileQuality = getMobilePresetQuality(storedState?.preset ?? defaultPresetKey);
+    storedState.quality = mobileQuality;
+    controlsState.setQuality(mobileQuality);
+  }
   if (!storedState?.quality || !isQualityLevel(storedState.quality)) {
     const fallbackPreset = storedState?.preset ?? defaultPresetKey;
     controlsState.setQuality(getDefaultQuality(fallbackPreset));
@@ -283,7 +300,10 @@ export function createApp() {
     return Math.min(baseCap, downstepCap);
   };
   const applyAdaptivePixelRatio = () => {
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, getAdaptivePixelRatioCap()));
+    const desktopPixelRatioCap = 1.5;
+    const qualityCap = getAdaptivePixelRatioCap();
+    const runtimeCap = isMobileDevice() ? qualityCap : Math.min(qualityCap, desktopPixelRatioCap);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, runtimeCap));
   };
 
   const applyQualityLevel = (level) => {
@@ -352,8 +372,10 @@ export function createApp() {
   };
   const sanitizeGridOverride = (grid = {}) => {
     const next = {};
-    if (typeof grid.gridCount === 'number')
-      next.gridCount = Math.max(2, Math.min(5, Math.floor(grid.gridCount)));
+    if (typeof grid.gridCount === 'number') {
+      const maxGrid = isMobileDevice() ? 2 : 5;
+      next.gridCount = Math.max(2, Math.min(maxGrid, Math.floor(grid.gridCount)));
+    }
     if (typeof grid.gridSpacing === 'number') next.gridSpacing = grid.gridSpacing;
     return next;
   };
@@ -496,6 +518,7 @@ export function createApp() {
   const applyPreset = (key, { overwriteUser = false, applyPresetQuality = true } = {}) => {
     const isDeepBlue = key === 'DEEP_BLUE';
     const preset = PRESETS[key] ?? PRESETS.DEEP_BLUE;
+    const maxGrid = isMobileDevice() ? 2 : 5;
     const presetState = {
       presetKey: key,
       flowEnabled: preset.flowEnabled,
@@ -513,7 +536,7 @@ export function createApp() {
         lightMotionSpeed: preset.lighting.flowSpeed,
       },
       scene: {
-        gridCount: Math.max(2, Math.min(5, preset.grid.gridCount ?? 3)),
+        gridCount: Math.max(2, Math.min(maxGrid, preset.grid.gridCount ?? 3)),
         gridSpacing: preset.grid.gridSpacing,
         globalRotationSpeed: preset.motion.groupRot,
         driftAmp: preset.motion.driftAmp,
@@ -568,7 +591,7 @@ export function createApp() {
     applyAdaptivePixelRatio();
 
     if (applyPresetQuality) {
-      const desiredQuality = isHighDefaultPreset(key) ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.MEDIUM;
+      const desiredQuality = getPresetQuality(key);
       if (controlsState.state.quality !== desiredQuality) {
         applyQualityLevel(desiredQuality);
         controlsState.setQuality(desiredQuality);
@@ -707,6 +730,8 @@ export function createApp() {
 
   const clock = new THREE.Clock();
   let lastAudioStatePersistAt = 0;
+  const cameraDrift = new THREE.Vector3();
+  const previousCameraDrift = new THREE.Vector3();
   const animate = () => {
     const deltaTime = clock.getDelta();
     const elapsed = clock.getElapsedTime();
@@ -721,7 +746,13 @@ export function createApp() {
       torusCluster.setHoverIndex(hoveredInstanceId);
     }
     torusCluster.update(deltaTime, reactive);
-    torusCluster.mesh.rotation.y += layoutState.rotationSpeed * deltaTime + touchSpinVelocity;
+    torusCluster.mesh.rotation.y +=
+      layoutState.rotationSpeed * GLOBAL_ROTATION_SCALE * deltaTime + touchSpinVelocity;
+    cameraDrift.set(Math.sin(elapsed * 0.08) * 0.2, Math.cos(elapsed * 0.06) * 0.15, 0);
+    cameraDrift.sub(previousCameraDrift);
+    camera.position.add(cameraDrift);
+    controls.target.add(cameraDrift);
+    previousCameraDrift.add(cameraDrift);
     const touchDecay = Math.pow(0.9, deltaTime * 60);
     touchSpinVelocity *= touchDecay;
     if (Math.abs(touchSpinVelocity) < 0.00005) {

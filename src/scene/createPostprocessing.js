@@ -50,7 +50,7 @@ export function createPostprocessing({ renderer, scene, camera, width, height } 
   const renderPass = new RenderPass(scene, camera);
   composer.addPass(renderPass);
 
-  const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 0.22, 0.35, 0.85);
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(width, height), 0.32, 0.35, 0.78);
   composer.addPass(bloomPass);
 
   const vignetteGrainPass = new ShaderPass(VignetteGrainShader);
@@ -80,10 +80,10 @@ export function createPostprocessing({ renderer, scene, camera, width, height } 
       const bloomThreshold = flowProfile === 'STRONG' ? 0.38 : 0.28;
       const bass = flowActive ? (reactive.bass ?? 0) : 0;
       const high = flowActive ? (reactive.high ?? 0) : 0;
-      const baseStrength = 0.22 * bloomQualityScale * strongBloomScale;
-      const maxStrength = 1.8 * bloomQualityScale * strongBloomScale;
-      const baseRadius = 0.2 * bloomQualityScale;
-      const maxRadius = 0.55 * bloomQualityScale;
+      const baseStrength = 0.32 * bloomQualityScale * strongBloomScale;
+      const maxStrength = 0.85 * bloomQualityScale * strongBloomScale;
+      const baseRadius = 0.35 * bloomQualityScale;
+      const maxRadius = 0.52 * bloomQualityScale;
       bloomPass.strength = THREE.MathUtils.clamp(
         baseStrength + bass * 1.2 * bloomQualityScale * strongBloomScale,
         baseStrength,
