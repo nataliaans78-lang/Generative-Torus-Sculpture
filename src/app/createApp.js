@@ -94,12 +94,23 @@ export function createApp() {
   const raycaster = new THREE.Raycaster();
   const hoverPointer = new THREE.Vector2(0, 0);
   let isHoverPointerActive = false;
+  let activeTouchPointerId = null;
+  let lastTouchClientX = 0;
+  let touchSpinVelocity = 0;
   const clampPointer = (value) => THREE.MathUtils.clamp(value, -1, 1);
+  const clampTouchSpinVelocity = (value) => THREE.MathUtils.clamp(value, -0.06, 0.06);
+  const isPointerInsideControls = (event) =>
+    event.target instanceof Element && event.target.closest('.portfolio-controls');
   const handlePointerMove = (event) => {
-    if (event.target instanceof Element && event.target.closest('.portfolio-controls')) {
+    if (isPointerInsideControls(event)) {
       isHoverPointerActive = false;
       torusCluster?.setHoverIndex(-1);
       return;
+    }
+    if (event.pointerType === 'touch' && activeTouchPointerId === event.pointerId) {
+      const deltaX = event.clientX - lastTouchClientX;
+      lastTouchClientX = event.clientX;
+      touchSpinVelocity = clampTouchSpinVelocity(touchSpinVelocity + deltaX * 0.00025);
     }
     const bounds = renderer.domElement.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
@@ -108,11 +119,25 @@ export function createApp() {
     hoverPointer.set(clampPointer(x), clampPointer(y));
     isHoverPointerActive = true;
   };
+  const handlePointerDown = (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (isPointerInsideControls(event)) return;
+    activeTouchPointerId = event.pointerId;
+    lastTouchClientX = event.clientX;
+  };
+  const handlePointerUp = (event) => {
+    if (event.pointerType !== 'touch') return;
+    if (activeTouchPointerId !== event.pointerId) return;
+    activeTouchPointerId = null;
+  };
   const handlePointerLeave = () => {
     isHoverPointerActive = false;
     torusCluster?.setHoverIndex(-1);
   };
+  window.addEventListener('pointerdown', handlePointerDown, { passive: true });
   window.addEventListener('pointermove', handlePointerMove, { passive: true });
+  window.addEventListener('pointerup', handlePointerUp, { passive: true });
+  window.addEventListener('pointercancel', handlePointerUp, { passive: true });
   window.addEventListener('pointerleave', handlePointerLeave, { passive: true });
 
   const lights = createLights(scene, LIGHT_SETTINGS);
@@ -696,7 +721,12 @@ export function createApp() {
       torusCluster.setHoverIndex(hoveredInstanceId);
     }
     torusCluster.update(deltaTime, reactive);
-    torusCluster.mesh.rotation.y += layoutState.rotationSpeed * deltaTime;
+    torusCluster.mesh.rotation.y += layoutState.rotationSpeed * deltaTime + touchSpinVelocity;
+    const touchDecay = Math.pow(0.9, deltaTime * 60);
+    touchSpinVelocity *= touchDecay;
+    if (Math.abs(touchSpinVelocity) < 0.00005) {
+      touchSpinVelocity = 0;
+    }
     const exposure = controlsState.state.flowEnabled
       ? THREE.MathUtils.clamp(1.0 + (reactive?.mid ?? 0) * 0.6, 0.95, 1.25)
       : 1.08;
@@ -713,7 +743,10 @@ export function createApp() {
   requestAnimationFrame(animate);
 
   window.addEventListener('beforeunload', () => {
+    window.removeEventListener('pointerdown', handlePointerDown);
     window.removeEventListener('pointermove', handlePointerMove);
+    window.removeEventListener('pointerup', handlePointerUp);
+    window.removeEventListener('pointercancel', handlePointerUp);
     window.removeEventListener('pointerleave', handlePointerLeave);
     if (!audio) return;
     writeAudioPlaybackState(audio.isPlaying(), audio.getCurrentTime?.() ?? 0);

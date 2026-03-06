@@ -80,7 +80,9 @@ export function createSceneControls({
   const panelToggle = document.createElement('button');
   panelToggle.type = 'button';
   panelToggle.className = 'portfolio-controls__panel-toggle';
-  panelToggle.textContent = PANEL_COLLAPSE_ICON;
+  panelToggle.textContent = window.matchMedia('(max-width: 640px)').matches
+    ? PANEL_EXPAND_ICON
+    : PANEL_COLLAPSE_ICON;
   panelToggle.setAttribute('aria-label', 'Hide controls panel');
   panelToggle.setAttribute('aria-expanded', 'true');
   const drawer = document.createElement('div');
@@ -394,6 +396,7 @@ export function createSceneControls({
   };
   window.addEventListener('resize', () => {
     setLightingVisibility(presetSelect.value);
+    setPanelCollapsed(panelCollapsed);
     if (!isMobile()) {
       setQualityMenuOpen(true);
       return;
