@@ -31,8 +31,11 @@ const isMobileDevice = () =>
   /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
   window.matchMedia('(max-width: 768px)').matches;
 
-const getMobilePresetQuality = (presetKey = 'DEEP_BLUE') =>
-  presetKey === 'DEEP_BLUE' ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.LOW;
+const getMobilePresetQuality = (presetKey = 'DEEP_BLUE') => {
+  if (presetKey === 'DEEP_BLUE') return QUALITY_LEVELS.HIGH;
+  if (presetKey === 'FLOW_SOFT' || presetKey === 'FLOW_STRONG') return QUALITY_LEVELS.MEDIUM;
+  return QUALITY_LEVELS.LOW;
+};
 
 const getPresetQuality = (presetKey = 'DEEP_BLUE') => {
   if (isMobileDevice()) return getMobilePresetQuality(presetKey);
@@ -40,10 +43,58 @@ const getPresetQuality = (presetKey = 'DEEP_BLUE') => {
   return HIGH_DEFAULT_PRESETS.has(presetKey) ? QUALITY_LEVELS.HIGH : QUALITY_LEVELS.MEDIUM;
 };
 const GLOBAL_ROTATION_SCALE = 0.7;
+const MOBILE_LAYOUT_PROFILE = Object.freeze({
+  gridMin: 1,
+  gridDefault: 2,
+  gridMax: 3,
+  torusScale: 0.8,
+});
+const DESKTOP_LAYOUT_PROFILE = Object.freeze({
+  gridMin: 2,
+  gridDefault: 3,
+  gridMax: 5,
+  torusScale: 1,
+});
+
+const getLayoutProfile = () => (isMobileDevice() ? MOBILE_LAYOUT_PROFILE : DESKTOP_LAYOUT_PROFILE);
+
+const clampGridCount = (gridCount, layoutProfile = getLayoutProfile()) => {
+  const fallback =
+    typeof gridCount === 'number' && Number.isFinite(gridCount)
+      ? gridCount
+      : layoutProfile.gridDefault;
+  return Math.max(
+    layoutProfile.gridMin,
+    Math.min(layoutProfile.gridMax, Math.floor(fallback)),
+  );
+};
 
 function resolvedGridDimensions(gridCount) {
-  const maxGrid = isMobileDevice() ? 2 : 5;
-  const count = Math.max(2, Math.min(maxGrid, Math.floor(gridCount ?? 3)));
+  const count = clampGridCount(gridCount);
+  if (isMobileDevice()) {
+    if (count <= 1) {
+      return {
+        gridCount: count,
+        nx: 2,
+        ny: 2,
+        nz: 1,
+      };
+    }
+    if (count === 2) {
+      return {
+        gridCount: count,
+        nx: 3,
+        ny: 2,
+        nz: 2,
+      };
+    }
+    return {
+      gridCount: count,
+      nx: 3,
+      ny: 3,
+      nz: 3,
+    };
+  }
   return {
     gridCount: count,
     nx: count + 1,
@@ -373,8 +424,7 @@ export function createApp() {
   const sanitizeGridOverride = (grid = {}) => {
     const next = {};
     if (typeof grid.gridCount === 'number') {
-      const maxGrid = isMobileDevice() ? 2 : 5;
-      next.gridCount = Math.max(2, Math.min(maxGrid, Math.floor(grid.gridCount)));
+      next.gridCount = clampGridCount(grid.gridCount);
     }
     if (typeof grid.gridSpacing === 'number') next.gridSpacing = grid.gridSpacing;
     return next;
@@ -499,6 +549,8 @@ export function createApp() {
       motion: {
         driftAmp: layoutState.driftAmp,
       },
+      scaleMultiplier: getLayoutProfile().torusScale,
+      heroScaleMultiplier: isMobileDevice() ? 1.35 : 1,
       sharedMaterial: torusResources.material,
       sharedStripeTexture: torusResources.stripeTexture,
     });
@@ -518,7 +570,10 @@ export function createApp() {
   const applyPreset = (key, { overwriteUser = false, applyPresetQuality = true } = {}) => {
     const isDeepBlue = key === 'DEEP_BLUE';
     const preset = PRESETS[key] ?? PRESETS.DEEP_BLUE;
-    const maxGrid = isMobileDevice() ? 2 : 5;
+    const layoutProfile = getLayoutProfile();
+    const presetGridCount = isMobileDevice()
+      ? layoutProfile.gridDefault
+      : preset.grid.gridCount ?? layoutProfile.gridDefault;
     const presetState = {
       presetKey: key,
       flowEnabled: preset.flowEnabled,
@@ -536,7 +591,7 @@ export function createApp() {
         lightMotionSpeed: preset.lighting.flowSpeed,
       },
       scene: {
-        gridCount: Math.max(2, Math.min(maxGrid, preset.grid.gridCount ?? 3)),
+        gridCount: clampGridCount(presetGridCount, layoutProfile),
         gridSpacing: preset.grid.gridSpacing,
         globalRotationSpeed: preset.motion.groupRot,
         driftAmp: preset.motion.driftAmp,
@@ -653,6 +708,11 @@ export function createApp() {
     presetOptions,
     initialLighting: controlsState.state.lighting,
     initialScene: controlsState.state.scene,
+    gridCountLimits: {
+      min: getLayoutProfile().gridMin,
+      max: getLayoutProfile().gridMax,
+      defaultValue: getLayoutProfile().gridDefault,
+    },
     initialQuality: controlsState.state.quality,
     onPresetChange: (key) => handlePresetChange(key),
     onLightingChange: (partial) => {

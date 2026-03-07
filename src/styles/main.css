@@ -261,6 +261,17 @@ canvas {
   pointer-events: none;
 }
 
+.portfolio-controls--collapsed .qualityMenu {
+  display: none !important;
+}
+
+.portfolio-controls--collapsed .ui-section__content {
+  max-height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden;
+  transition: none !important;
+}
+
 @media (max-width: 768px) {
   .portfolio-controls {
     width: min(360px, calc(100vw - 24px));
@@ -285,7 +296,7 @@ canvas {
   .qualityMenu {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     position: static;
-    display: grid;
+    display: none;
     width: 100%;
     max-height: none;
     overflow: visible;
@@ -295,17 +306,18 @@ canvas {
     padding: 0;
     z-index: auto;
   }
+  .qualityMenu.is-open {
+    display: grid;
+  }
 }
 
 @media (max-width: 640px) {
   .qualityToggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
+    display: none;
   }
   .qualityMenu {
     display: none;
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     max-height: min(160px, 35vh);
     overflow-y: auto;
     overflow-x: hidden;

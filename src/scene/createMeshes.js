@@ -123,6 +123,8 @@ export function createTorusCluster(
     geometryConfig = {},
     materialConfig = {},
     motion = {},
+    scaleMultiplier = 1,
+    heroScaleMultiplier = 1,
     sharedMaterial = null,
     sharedStripeTexture = null,
   } = {},
@@ -172,10 +174,15 @@ export function createTorusCluster(
   const rowDenominator = Math.max(1, ny - 1);
   const colorA = new THREE.Color();
   const colorB = new THREE.Color();
+  const resolvedScaleMultiplier =
+    typeof scaleMultiplier === 'number' && scaleMultiplier > 0 ? scaleMultiplier : 1;
+  const resolvedHeroScaleMultiplier =
+    typeof heroScaleMultiplier === 'number' && heroScaleMultiplier > 0 ? heroScaleMultiplier : 1;
 
   for (let i = 0; i < count; i += 1) {
     const scaleBase = 0.92 + hash(i) * 0.14;
-    scaleFactors[i] = i === heroIndex ? 1.35 : scaleBase;
+    const baseScale = i === heroIndex ? scaleBase * resolvedHeroScaleMultiplier : scaleBase;
+    scaleFactors[i] = baseScale * resolvedScaleMultiplier;
     rotationVariance[i] = 0.87 + hash(i * 13 + 7) * 0.26;
     phases[i] = hash(i * 2) * Math.PI * 2;
     const iy = Math.floor(i / (nx * nz));

@@ -13,6 +13,7 @@ const FOG_COLOR = 0x050814;
 const FOG_NEAR = 15;
 const FOG_FAR = 120;
 const LOW_QUALITY_SPOT_COUNT = 2;
+const MOBILE_HIGH_WALL_SPOT_FACTOR = 0.75;
 const GLOBAL_ROOM_BRIGHTNESS = 1.5;
 const FLOW_PALETTE = Object.freeze([
   new THREE.Color('#5B8CFF'),
@@ -189,6 +190,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     flowProfile: 'SOFT',
     qualityLevel: 'HIGH',
     activeSpotCount: SPOT_COUNT,
+    activeWallSpotCount: WALL_SPOT_COUNT,
     audioActive: false,
   };
   let roomEmissiveBase = 0.2 * GLOBAL_ROOM_BRIGHTNESS;
@@ -201,8 +203,12 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
   const pointerLeaveHandler = () => {
     mouse.set(0, 0);
   };
+  const resizeHandler = () => {
+    applyWallSpotBudget();
+  };
   window.addEventListener('pointermove', pointerHandler, { passive: true });
   window.addEventListener('pointerleave', pointerLeaveHandler, { passive: true });
+  window.addEventListener('resize', resizeHandler, { passive: true });
   let elapsed = 0;
   let bassSmoothed = 0;
   let midSmoothed = 0;
@@ -288,6 +294,24 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     }
     return THREE.MathUtils.clamp(budget, 0, SPOT_COUNT);
   };
+  const resolveWallSpotBudget = () => {
+    const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
+    if (!isMobileViewport || state.qualityLevel !== 'HIGH') {
+      return WALL_SPOT_COUNT;
+    }
+    const reduced = Math.floor(WALL_SPOT_COUNT * MOBILE_HIGH_WALL_SPOT_FACTOR);
+    return THREE.MathUtils.clamp(reduced, 1, WALL_SPOT_COUNT);
+  };
+  const applyWallSpotBudget = () => {
+    state.activeWallSpotCount = resolveWallSpotBudget();
+    for (let i = 0; i < WALL_SPOT_COUNT; i += 1) {
+      const active = i < state.activeWallSpotCount;
+      wallSpots[i].visible = state.roomEnabled && state.flowEnabled && active;
+      if (!active) {
+        wallSpots[i].material.opacity = 0;
+      }
+    }
+  };
   const applySpotBudget = () => {
     state.activeSpotCount = resolveSpotBudget();
     for (let i = 0; i < SPOT_COUNT; i += 1) {
@@ -298,6 +322,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
         spotIntensitySmoothed[i] = 0;
       }
     }
+    applyWallSpotBudget();
   };
   const applyLightingDim = (factor) => {
     baseLights.forEach((light, index) => {
@@ -381,13 +406,20 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
   const updateWallSpots = () => {
     const subtle = 0.14 + avgSmoothed * (state.flowProfile === 'STRONG' ? 0.14 : 0.08);
     for (let i = 0; i < WALL_SPOT_COUNT; i += 1) {
+      const active = i < state.activeWallSpotCount;
+      const spot = wallSpots[i];
+      if (!active) {
+        spot.visible = false;
+        spot.material.opacity = 0;
+        continue;
+      }
       const angle =
         wallSpotAngles[i] +
         elapsed * wallSpotSpeeds[i] * Math.max(0.5, state.flowSpeed) * (1 + midSmoothed * 0.5);
       const yBase = wallSpotHeights[i] * roomState.radius;
       const y = yBase + Math.sin(elapsed * 0.32 + i * 0.7) * roomState.radius * 0.02;
       const radial = Math.sqrt(Math.max(0, roomState.radius * roomState.radius - y * y)) * 0.985;
-      const spot = wallSpots[i];
+      spot.visible = state.roomEnabled && state.flowEnabled;
       spot.position.set(Math.cos(angle) * radial, y, Math.sin(angle) * radial);
       spot.lookAt(0, 0, 0);
       spot.material.opacity = state.flowEnabled ? subtle : subtle * 0.7;
@@ -464,6 +496,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     wallSpots.forEach((spot) => {
       spot.visible = state.roomEnabled && state.flowEnabled;
     });
+    applyWallSpotBudget();
     syncFog();
   };
   const setGridLayout = (layout) => {
@@ -562,6 +595,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     dispose() {
       window.removeEventListener('pointermove', pointerHandler);
       window.removeEventListener('pointerleave', pointerLeaveHandler);
+      window.removeEventListener('resize', resizeHandler);
       scene.remove(rig);
       scene.fog = originalFog;
       goboTexture.dispose();
