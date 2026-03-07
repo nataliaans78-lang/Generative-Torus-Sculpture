@@ -66,6 +66,7 @@ export function createSceneControls({
   presetOptions = [],
   initialLighting = {},
   initialScene = {},
+  gridCountLimits = { min: 2, max: 5, defaultValue: 3 },
   initialQuality = QUALITY_LEVELS.HIGH,
   onPresetChange,
   onLightingChange,
@@ -182,13 +183,23 @@ export function createSceneControls({
     focusSlider.row,
     speedSlider.row,
   );
+  const gridCountMin = Math.max(1, Math.floor(gridCountLimits?.min ?? 2));
+  const gridCountMax = Math.max(gridCountMin, Math.floor(gridCountLimits?.max ?? 5));
+  const gridCountDefault = Math.max(
+    gridCountMin,
+    Math.min(gridCountMax, Math.floor(gridCountLimits?.defaultValue ?? 3)),
+  );
+  const initialGridCount =
+    typeof initialScene.gridCount === 'number'
+      ? Math.max(gridCountMin, Math.min(gridCountMax, Math.floor(initialScene.gridCount)))
+      : gridCountDefault;
 
   const spacingSlider = createSlider({
     label: 'Grid Count',
-    min: 2,
-    max: 5,
+    min: gridCountMin,
+    max: gridCountMax,
     step: 1,
-    value: initialScene.gridCount ?? 3,
+    value: initialGridCount,
     onInput: (value) => onSceneChange?.({ gridCount: value }),
   });
   const gridSpacingSlider = createSlider({
@@ -239,7 +250,15 @@ export function createSceneControls({
   const onDocumentPointerDown = (event) => {
     if (!isMobile()) return;
     const target = event.target;
-    if (target instanceof Node && qualityPicker.contains(target)) return;
+    if (target instanceof Node && panelToggle.contains(target)) {
+      return;
+    }
+    if (
+      target instanceof Node &&
+      (qualityPicker.contains(target) || sectionQuality.wrapper.contains(target))
+    ) {
+      return;
+    }
     setQualityMenuOpen(false);
   };
   const onDocumentKeyDown = (event) => {
@@ -251,26 +270,41 @@ export function createSceneControls({
     document.addEventListener('pointerdown', onDocumentPointerDown, true);
     document.addEventListener('keydown', onDocumentKeyDown, true);
   };
+  const forceCloseQualityMenu = () => {
+    qualityMenuOpen = false;
+    qualityMenu.classList.remove('is-open');
+    qualityMenu.setAttribute('aria-hidden', 'true');
+    qualityToggle.setAttribute('aria-expanded', 'false');
+    detachGlobalQualityHandlers();
+  };
+  const refreshExpandedSectionHeights = () => {
+    sections.forEach((section) => {
+      if (!section.collapsed) {
+        section.content.style.maxHeight = `${section.inner.scrollHeight}px`;
+      }
+    });
+  };
   const setQualityMenuOpen = (open) => {
-    if (!isMobile()) {
-      qualityMenuOpen = true;
-      qualityMenu.classList.add('is-open');
-      qualityMenu.setAttribute('aria-hidden', 'false');
-      qualityToggle.setAttribute('aria-expanded', 'false');
-      detachGlobalQualityHandlers();
+    if (!open) {
+      forceCloseQualityMenu();
+      requestAnimationFrame(refreshExpandedSectionHeights);
       return;
     }
     qualityMenuOpen = Boolean(open);
     qualityMenu.classList.toggle('is-open', qualityMenuOpen);
     qualityMenu.setAttribute('aria-hidden', qualityMenuOpen ? 'false' : 'true');
-    qualityToggle.setAttribute('aria-expanded', qualityMenuOpen ? 'true' : 'false');
-    if (qualityMenuOpen) {
+    qualityToggle.setAttribute(
+      'aria-expanded',
+      isMobile() && qualityMenuOpen ? 'true' : 'false',
+    );
+    if (isMobile() && qualityMenuOpen) {
       attachGlobalQualityHandlers();
     } else {
       detachGlobalQualityHandlers();
     }
+    requestAnimationFrame(refreshExpandedSectionHeights);
   };
-  setQualityMenuOpen(!isMobile());
+  setQualityMenuOpen(false);
 
   const setPanelCollapsed = (collapsed) => {
     panelCollapsed = collapsed;
@@ -284,8 +318,12 @@ export function createSceneControls({
     );
     panelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     if (collapsed) {
-      setQualityMenuOpen(false);
+      sections.forEach((section) => setSectionCollapsed(section, true));
+      forceCloseQualityMenu();
+    } else {
+      setQualityMenuOpen(!sectionQuality.collapsed);
     }
+    requestAnimationFrame(refreshExpandedSectionHeights);
   };
 
   const setSectionCollapsed = (section, collapsed) => {
@@ -312,9 +350,6 @@ export function createSceneControls({
       });
       onQualityChange?.(value);
       qualityToggle.textContent = value;
-      if (isMobile()) {
-        setQualityMenuOpen(false);
-      }
     });
   });
   qualityToggle.addEventListener('click', () => {
@@ -323,7 +358,11 @@ export function createSceneControls({
     setQualityMenuOpen(!qualityMenuOpen);
   });
   panelToggle.addEventListener('click', () => {
-    setPanelCollapsed(!panelCollapsed);
+    const nextCollapsed = !panelCollapsed;
+    if (nextCollapsed) {
+      forceCloseQualityMenu();
+    }
+    setPanelCollapsed(nextCollapsed);
   });
   sectionQuality.inner.append(qualityPicker);
   qualityButtons.forEach((btn, key) => btn.classList.toggle('is-active', key === initialQuality));
@@ -331,8 +370,8 @@ export function createSceneControls({
   const toggleSection = (section) => {
     const nextCollapsed = !section.collapsed;
     setSectionCollapsed(section, nextCollapsed);
-    if (section === sectionQuality && nextCollapsed) {
-      setQualityMenuOpen(false);
+    if (section === sectionQuality) {
+      setQualityMenuOpen(!nextCollapsed);
     }
   };
 
@@ -347,7 +386,17 @@ export function createSceneControls({
       setSectionCollapsed(sectionLighting, true);
       return;
     }
-    setSectionCollapsed(sectionLighting, false);
+    if (!isMobile()) {
+      setSectionCollapsed(sectionLighting, false);
+    }
+  };
+
+  const applyDefaultSectionState = () => {
+    if (isMobile()) {
+      sections.forEach((section) => setSectionCollapsed(section, true));
+      return;
+    }
+    sections.forEach((section) => setSectionCollapsed(section, false));
   };
 
   presetSelect.addEventListener('change', () => {
@@ -386,22 +435,21 @@ export function createSceneControls({
   container.append(containerFragment);
   document.body.append(container);
 
+  applyDefaultSectionState();
   setLightingVisibility(initialPreset);
+  setPanelCollapsed(isMobile());
+  setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   const resetPanel = (presetKey = initialPreset) => {
     setPanelCollapsed(false);
-    sections.forEach((section) => setSectionCollapsed(section, false));
+    applyDefaultSectionState();
     setLightingVisibility(presetKey);
     drawer.scrollTop = 0;
-    setQualityMenuOpen(!isMobile());
+    setQualityMenuOpen(!sectionQuality.collapsed);
   };
   window.addEventListener('resize', () => {
     setLightingVisibility(presetSelect.value);
     setPanelCollapsed(panelCollapsed);
-    if (!isMobile()) {
-      setQualityMenuOpen(true);
-      return;
-    }
-    setQualityMenuOpen(false);
+    setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   });
 
   return {
