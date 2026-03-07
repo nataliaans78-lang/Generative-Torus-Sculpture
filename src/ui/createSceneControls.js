@@ -26,9 +26,21 @@ function createSlider({ label, min, max, step, value, onInput }) {
   row.append(text, input);
   return {
     row,
+    getValue() {
+      return Number(input.value);
+    },
     setValue(val) {
       input.value = val;
       text.textContent = `${label}: ${Number.isInteger(step) ? val : val.toFixed(2)}`;
+    },
+    setRange(nextMin, nextMax) {
+      input.min = nextMin;
+      input.max = nextMax;
+      const clamped = Math.max(nextMin, Math.min(nextMax, Number(input.value)));
+      input.value = clamped;
+      text.textContent = `${label}: ${
+        Number.isInteger(step) ? clamped : clamped.toFixed(2)
+      }`;
     },
   };
 }
@@ -76,6 +88,8 @@ export function createSceneControls({
   onUploadAudio,
   onResetAll,
 } = {}) {
+  const hasPresetPicker = presetOptions.length > 1;
+  let currentPresetKey = initialPreset;
   const container = document.createElement('div');
   container.className = 'portfolio-controls';
   const panelToggle = document.createElement('button');
@@ -89,33 +103,43 @@ export function createSceneControls({
   const drawer = document.createElement('div');
   drawer.className = 'portfolio-controls__drawer';
 
-  const sectionPreset = createSection({ id: 'preset', title: 'PRESET' });
+  const sectionPreset = hasPresetPicker ? createSection({ id: 'preset', title: 'PRESET' }) : null;
   const sectionLighting = createSection({ id: 'lighting', title: 'LIGHTING' });
   const sectionAudio = createSection({ id: 'audio', title: 'AUDIO' });
   const sectionScene = createSection({ id: 'scene', title: 'SCENE' });
   const sectionQuality = createSection({ id: 'quality', title: 'QUALITY' });
 
-  const sections = [sectionPreset, sectionLighting, sectionAudio, sectionScene, sectionQuality];
+  const sections = [
+    ...(sectionPreset ? [sectionPreset] : []),
+    sectionLighting,
+    sectionAudio,
+    sectionScene,
+    sectionQuality,
+  ];
   sections.forEach((section) => drawer.appendChild(section.wrapper));
 
-  const presetSelect = document.createElement('select');
-  presetSelect.className = 'portfolio-controls__select';
-  presetOptions.forEach(({ key, label }) => {
-    const option = document.createElement('option');
-    option.value = key;
-    option.textContent = label;
-    if (key === initialPreset) {
-      option.selected = true;
-    }
-    presetSelect.appendChild(option);
-  });
+  const presetSelect = hasPresetPicker ? document.createElement('select') : null;
+  if (presetSelect) {
+    presetSelect.className = 'portfolio-controls__select';
+    presetOptions.forEach(({ key, label }) => {
+      const option = document.createElement('option');
+      option.value = key;
+      option.textContent = label;
+      if (key === initialPreset) {
+        option.selected = true;
+      }
+      presetSelect.appendChild(option);
+    });
+  }
 
   const resetAllButton = document.createElement('button');
   resetAllButton.type = 'button';
   resetAllButton.className = 'portfolio-controls__button portfolio-controls__button--reset';
   resetAllButton.textContent = 'Reset All';
 
-  sectionPreset.inner.append(presetSelect);
+  if (sectionPreset && presetSelect) {
+    sectionPreset.inner.append(presetSelect);
+  }
 
   const playButton = document.createElement('button');
   playButton.className = 'portfolio-controls__button portfolio-controls__button--play';
@@ -183,6 +207,11 @@ export function createSceneControls({
     focusSlider.row,
     speedSlider.row,
   );
+  const setMobileDeepBlueLightingCompact = (enabled) => {
+    spotSlider.row.style.display = enabled ? 'none' : '';
+    focusSlider.row.style.display = enabled ? 'none' : '';
+    speedSlider.row.style.display = enabled ? 'none' : '';
+  };
   const gridCountMin = Math.max(1, Math.floor(gridCountLimits?.min ?? 2));
   const gridCountMax = Math.max(gridCountMin, Math.floor(gridCountLimits?.max ?? 5));
   const gridCountDefault = Math.max(
@@ -381,8 +410,15 @@ export function createSceneControls({
 
   const setLightingVisibility = (presetKey) => {
     const isDeep = presetKey === 'DEEP_BLUE';
-    sectionLighting.wrapper.style.display = isDeep ? 'none' : 'block';
-    if (isDeep) {
+    const isDeepMobile = isDeep && isMobile();
+    setMobileDeepBlueLightingCompact(isDeepMobile);
+    if (isDeep && !isDeepMobile) {
+      sectionLighting.wrapper.style.display = 'none';
+      setSectionCollapsed(sectionLighting, true);
+      return;
+    }
+    sectionLighting.wrapper.style.display = 'block';
+    if (isDeepMobile) {
       setSectionCollapsed(sectionLighting, true);
       return;
     }
@@ -399,11 +435,14 @@ export function createSceneControls({
     sections.forEach((section) => setSectionCollapsed(section, false));
   };
 
-  presetSelect.addEventListener('change', () => {
-    onPresetChange?.(presetSelect.value);
-    setLightingVisibility(presetSelect.value);
-    drawer.scrollTop = 0;
-  });
+  if (presetSelect) {
+    presetSelect.addEventListener('change', () => {
+      currentPresetKey = presetSelect.value;
+      onPresetChange?.(presetSelect.value);
+      setLightingVisibility(presetSelect.value);
+      drawer.scrollTop = 0;
+    });
+  }
 
   resetAllButton.addEventListener('click', () => onResetAll?.());
   playButton.addEventListener('click', async () => {
@@ -440,6 +479,7 @@ export function createSceneControls({
   setPanelCollapsed(isMobile());
   setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   const resetPanel = (presetKey = initialPreset) => {
+    currentPresetKey = presetKey;
     setPanelCollapsed(false);
     applyDefaultSectionState();
     setLightingVisibility(presetKey);
@@ -447,14 +487,17 @@ export function createSceneControls({
     setQualityMenuOpen(!sectionQuality.collapsed);
   };
   window.addEventListener('resize', () => {
-    setLightingVisibility(presetSelect.value);
+    setLightingVisibility(currentPresetKey);
     setPanelCollapsed(panelCollapsed);
     setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   });
 
   return {
     setPreset(key) {
-      presetSelect.value = key;
+      currentPresetKey = key;
+      if (presetSelect) {
+        presetSelect.value = key;
+      }
       setLightingVisibility(key);
       drawer.scrollTop = 0;
     },
@@ -471,6 +514,14 @@ export function createSceneControls({
       if (typeof values.gridSpacing === 'number') gridSpacingSlider.setValue(values.gridSpacing);
       if (typeof values.globalRotationSpeed === 'number')
         rotationSlider.setValue(values.globalRotationSpeed);
+    },
+    setGridCountLimits(limits = {}) {
+      const min = Math.max(1, Math.floor(limits.min ?? gridCountMin));
+      const max = Math.max(min, Math.floor(limits.max ?? gridCountMax));
+      spacingSlider.setRange(min, max);
+      const currentValue = spacingSlider.getValue();
+      const clamped = Math.max(min, Math.min(max, currentValue));
+      if (clamped !== currentValue) spacingSlider.setValue(clamped);
     },
     setQuality(value) {
       qualityButtons.forEach((btn, key) => btn.classList.toggle('is-active', key === value));

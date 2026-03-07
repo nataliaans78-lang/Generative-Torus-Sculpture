@@ -87,7 +87,7 @@ export const PRESETS = Object.freeze({
       centerIntensity: 0,
       flowSpotIntensity: 7.0,
       flowPulseIntensity: 5.5,
-      flowSpeed: 2.0,
+      flowSpeed: 1.2,
       flowAngle: Math.PI / 14,
       spotFocus: 0.92,
     }),

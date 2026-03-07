@@ -38,6 +38,8 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   }
   renderer.setPixelRatio(Math.min(dpr, preset.pixelRatioCap));
   renderer.shadowMap.enabled = preset.shadowsEnabled;
-  callback?.(preset, resolved);
+  if (typeof callback === 'function') {
+    callback(preset, resolved);
+  }
   return preset;
 }

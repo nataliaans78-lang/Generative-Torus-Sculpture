@@ -20,6 +20,23 @@ canvas {
   display: block;
 }
 
+.portfolio-mobile-preset-title {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(7, 11, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #edf3ff;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
 .landing-active .portfolio-controls {
   opacity: 0;
   pointer-events: none;
@@ -329,5 +346,11 @@ canvas {
   }
   .qualityMenu.is-open {
     display: grid;
+  }
+}
+
+@media (min-width: 769px) {
+  .portfolio-mobile-preset-title {
+    display: none;
   }
 }

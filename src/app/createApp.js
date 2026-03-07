@@ -49,6 +49,12 @@ const MOBILE_LAYOUT_PROFILE = Object.freeze({
   gridMax: 3,
   torusScale: 0.8,
 });
+const MOBILE_FLOW_LAYOUT_PROFILE = Object.freeze({
+  gridMin: 1,
+  gridDefault: 1,
+  gridMax: 2,
+  torusScale: 0.8,
+});
 const DESKTOP_LAYOUT_PROFILE = Object.freeze({
   gridMin: 2,
   gridDefault: 3,
@@ -56,7 +62,13 @@ const DESKTOP_LAYOUT_PROFILE = Object.freeze({
   torusScale: 1,
 });
 
-const getLayoutProfile = () => (isMobileDevice() ? MOBILE_LAYOUT_PROFILE : DESKTOP_LAYOUT_PROFILE);
+const isFlowPreset = (presetKey) => presetKey === 'FLOW_SOFT' || presetKey === 'FLOW_STRONG';
+
+const getLayoutProfile = (presetKey = 'DEEP_BLUE') => {
+  if (!isMobileDevice()) return DESKTOP_LAYOUT_PROFILE;
+  if (isFlowPreset(presetKey)) return MOBILE_FLOW_LAYOUT_PROFILE;
+  return MOBILE_LAYOUT_PROFILE;
+};
 
 const clampGridCount = (gridCount, layoutProfile = getLayoutProfile()) => {
   const fallback =
@@ -69,8 +81,8 @@ const clampGridCount = (gridCount, layoutProfile = getLayoutProfile()) => {
   );
 };
 
-function resolvedGridDimensions(gridCount) {
-  const count = clampGridCount(gridCount);
+function resolvedGridDimensions(gridCount, layoutProfile = getLayoutProfile()) {
+  const count = clampGridCount(gridCount, layoutProfile);
   if (isMobileDevice()) {
     if (count <= 1) {
       return {
@@ -256,11 +268,13 @@ export function createApp() {
   flow.setEnabled(false);
 
   const controlsState = createControlState();
-  const presetOptions = Object.entries(PRESETS).map(([key, preset]) => ({
-    key,
-    label: preset.label,
-  }));
   const defaultPresetKey = 'DEEP_BLUE';
+  const availablePresetKeys = isMobileDevice() ? [defaultPresetKey] : Object.keys(PRESETS);
+  const availablePresetKeySet = new Set(availablePresetKeys);
+  const presetOptions = availablePresetKeys.map((key) => ({
+    key,
+    label: PRESETS[key].label,
+  }));
   const createInitialStoredState = () => ({
     preset: defaultPresetKey,
     quality: getDefaultQuality(defaultPresetKey),
@@ -286,10 +300,11 @@ export function createApp() {
       return null;
     }
   };
-  const isPresetKey = (value) => typeof value === 'string' && Object.hasOwn(PRESETS, value);
+  const isPresetKey = (value) => typeof value === 'string' && availablePresetKeySet.has(value);
   const isQualityLevel = (value) => Object.values(QUALITY_LEVELS).includes(value);
   const storedState = readStoredState() ?? createInitialStoredState();
   if (isMobileDevice()) {
+    storedState.preset = defaultPresetKey;
     const mobileQuality = getMobilePresetQuality(storedState?.preset ?? defaultPresetKey);
     storedState.quality = mobileQuality;
     controlsState.setQuality(mobileQuality);
@@ -421,10 +436,10 @@ export function createApp() {
     });
     return next;
   };
-  const sanitizeGridOverride = (grid = {}) => {
+  const sanitizeGridOverride = (grid = {}, layoutProfile = getLayoutProfile()) => {
     const next = {};
     if (typeof grid.gridCount === 'number') {
-      next.gridCount = clampGridCount(grid.gridCount);
+      next.gridCount = clampGridCount(grid.gridCount, layoutProfile);
     }
     if (typeof grid.gridSpacing === 'number') next.gridSpacing = grid.gridSpacing;
     return next;
@@ -440,14 +455,16 @@ export function createApp() {
     if (!isPresetKey(presetKey)) return {};
     const raw = storedState.overrides?.[presetKey];
     if (!raw || typeof raw !== 'object') return {};
+    const layoutProfile = getLayoutProfile(presetKey);
     return {
       lighting: sanitizeLightingOverride(raw.lighting ?? {}),
-      grid: sanitizeGridOverride(raw.grid ?? {}),
+      grid: sanitizeGridOverride(raw.grid ?? {}, layoutProfile),
       motion: sanitizeMotionOverride(raw.motion ?? {}),
     };
   };
   const loadUserSettings = (presetKey, presetState) => {
     const override = getPresetOverride(presetKey);
+    const lockFlowMobileGridDefault = isMobileDevice() && isFlowPreset(presetKey);
     return {
       ...presetState,
       lighting: {
@@ -456,7 +473,7 @@ export function createApp() {
       },
       scene: {
         ...presetState.scene,
-        ...(typeof override.grid?.gridCount === 'number'
+        ...(!lockFlowMobileGridDefault && typeof override.grid?.gridCount === 'number'
           ? { gridCount: override.grid.gridCount }
           : {}),
         ...(typeof override.grid?.gridSpacing === 'number'
@@ -521,7 +538,10 @@ export function createApp() {
   };
 
   const layoutState = (() => {
-    const dims = resolvedGridDimensions(controlsState.state.scene.gridCount);
+    const dims = resolvedGridDimensions(
+      controlsState.state.scene.gridCount,
+      getLayoutProfile(controlsState.state.presetKey),
+    );
     return {
       ...dims,
       spacing: controlsState.state.scene.gridSpacing,
@@ -549,7 +569,7 @@ export function createApp() {
       motion: {
         driftAmp: layoutState.driftAmp,
       },
-      scaleMultiplier: getLayoutProfile().torusScale,
+      scaleMultiplier: getLayoutProfile(controlsState.state.presetKey).torusScale,
       heroScaleMultiplier: isMobileDevice() ? 1.35 : 1,
       sharedMaterial: torusResources.material,
       sharedStripeTexture: torusResources.stripeTexture,
@@ -570,7 +590,7 @@ export function createApp() {
   const applyPreset = (key, { overwriteUser = false, applyPresetQuality = true } = {}) => {
     const isDeepBlue = key === 'DEEP_BLUE';
     const preset = PRESETS[key] ?? PRESETS.DEEP_BLUE;
-    const layoutProfile = getLayoutProfile();
+    const layoutProfile = getLayoutProfile(key);
     const presetGridCount = isMobileDevice()
       ? layoutProfile.gridDefault
       : preset.grid.gridCount ?? layoutProfile.gridDefault;
@@ -602,7 +622,7 @@ export function createApp() {
     controlsState.replaceAll(overwriteUser ? presetState : loadUserSettings(key, presetState));
     const previousCount = layoutState.nx * layoutState.ny * layoutState.nz;
     layoutState.gridCount = controlsState.state.scene.gridCount;
-    const dims = resolvedGridDimensions(layoutState.gridCount);
+    const dims = resolvedGridDimensions(layoutState.gridCount, layoutProfile);
     layoutState.nx = dims.nx;
     layoutState.ny = dims.ny;
     layoutState.nz = dims.nz;
@@ -658,7 +678,8 @@ export function createApp() {
   };
 
   const layoutUpdate = (partial = {}) => {
-    const dims = resolvedGridDimensions(partial.gridCount ?? layoutState.gridCount);
+    const layoutProfile = getLayoutProfile(controlsState.state.presetKey);
+    const dims = resolvedGridDimensions(partial.gridCount ?? layoutState.gridCount, layoutProfile);
     const nextSpacing =
       typeof partial.gridSpacing === 'number' ? partial.gridSpacing : layoutState.spacing;
     const currentCount = layoutState.nx * layoutState.ny * layoutState.nz;
@@ -697,6 +718,7 @@ export function createApp() {
     storedState.preset = key;
     applyPreset(key);
     ui?.setPreset(key);
+    ui?.setGridCountLimits(getLayoutProfile(key));
     ui?.setLightingValues(controlsState.state.lighting);
     ui?.setSceneValues(controlsState.state.scene);
     ui?.setQuality(controlsState.state.quality);
@@ -709,9 +731,9 @@ export function createApp() {
     initialLighting: controlsState.state.lighting,
     initialScene: controlsState.state.scene,
     gridCountLimits: {
-      min: getLayoutProfile().gridMin,
-      max: getLayoutProfile().gridMax,
-      defaultValue: getLayoutProfile().gridDefault,
+      min: getLayoutProfile(controlsState.state.presetKey).gridMin,
+      max: getLayoutProfile(controlsState.state.presetKey).gridMax,
+      defaultValue: getLayoutProfile(controlsState.state.presetKey).gridDefault,
     },
     initialQuality: controlsState.state.quality,
     onPresetChange: (key) => handlePresetChange(key),
@@ -772,6 +794,7 @@ export function createApp() {
       controlsState.setQuality(defaultQuality);
       applyPreset(defaultPresetKey, { overwriteUser: true, applyPresetQuality: false });
       ui.setPreset(defaultPresetKey);
+      ui.setGridCountLimits(getLayoutProfile(defaultPresetKey));
       ui.setLightingValues(controlsState.state.lighting);
       ui.setSceneValues(controlsState.state.scene);
       ui.setQuality(defaultQuality);
@@ -780,10 +803,18 @@ export function createApp() {
     },
   });
 
+  if (isMobileDevice()) {
+    const mobilePresetTitle = document.createElement('div');
+    mobilePresetTitle.className = 'portfolio-mobile-preset-title';
+    mobilePresetTitle.textContent = 'Deep Blue';
+    document.body.append(mobilePresetTitle);
+  }
+
   const initialPreset = isPresetKey(storedState.preset) ? storedState.preset : defaultPresetKey;
   storedState.preset = initialPreset;
   applyPreset(initialPreset, { applyPresetQuality: false });
   ui?.setPreset(initialPreset);
+  ui?.setGridCountLimits(getLayoutProfile(initialPreset));
   ui?.setLightingValues(controlsState.state.lighting);
   ui?.setSceneValues(controlsState.state.scene);
   ui.setQuality(controlsState.state.quality);
