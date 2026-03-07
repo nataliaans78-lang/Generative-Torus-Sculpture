@@ -269,7 +269,7 @@ export function createApp() {
 
   const controlsState = createControlState();
   const defaultPresetKey = 'DEEP_BLUE';
-  const availablePresetKeys = isMobileDevice() ? [defaultPresetKey] : Object.keys(PRESETS);
+  const availablePresetKeys = Object.keys(PRESETS);
   const availablePresetKeySet = new Set(availablePresetKeys);
   const presetOptions = availablePresetKeys.map((key) => ({
     key,
@@ -821,6 +821,24 @@ export function createApp() {
 
   const clock = new THREE.Clock();
   let lastAudioStatePersistAt = 0;
+  let lastDeviceModeMobile = isMobileDevice();
+  const applyModeDefaults = (isMobile) => {
+    const targetPreset = defaultPresetKey;
+    const desiredQuality = isMobile
+      ? getMobilePresetQuality(targetPreset)
+      : getPresetQuality(targetPreset);
+    storedState.preset = targetPreset;
+    storedState.quality = desiredQuality;
+    controlsState.setQuality(desiredQuality);
+    applyQualityLevel(desiredQuality);
+    applyPreset(targetPreset, { overwriteUser: true, applyPresetQuality: false });
+    ui?.setPreset(targetPreset);
+    ui?.setGridCountLimits(getLayoutProfile(targetPreset));
+    ui?.setLightingValues(controlsState.state.lighting);
+    ui?.setSceneValues(controlsState.state.scene);
+    ui?.setQuality(desiredQuality);
+    writeStoredState();
+  };
   const cameraDrift = new THREE.Vector3();
   const previousCameraDrift = new THREE.Vector3();
   const animate = () => {
@@ -877,6 +895,11 @@ export function createApp() {
   window.addEventListener('resize', () => {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
+    const nextDeviceModeMobile = isMobileDevice();
+    if (nextDeviceModeMobile !== lastDeviceModeMobile) {
+      lastDeviceModeMobile = nextDeviceModeMobile;
+      applyModeDefaults(nextDeviceModeMobile);
+    }
     camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
     applyAdaptivePixelRatio();

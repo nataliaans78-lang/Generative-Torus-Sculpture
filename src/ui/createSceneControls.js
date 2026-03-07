@@ -272,6 +272,7 @@ export function createSceneControls({
   let qualityMenuOpen = false;
   let panelCollapsed = false;
   const isMobile = () => window.matchMedia('(max-width: 640px)').matches;
+  let lastMobileViewport = isMobile();
   const detachGlobalQualityHandlers = () => {
     document.removeEventListener('pointerdown', onDocumentPointerDown, true);
     document.removeEventListener('keydown', onDocumentKeyDown, true);
@@ -426,6 +427,10 @@ export function createSceneControls({
       setSectionCollapsed(sectionLighting, false);
     }
   };
+  const setPresetVisibility = () => {
+    if (!sectionPreset) return;
+    sectionPreset.wrapper.style.display = isMobile() ? 'none' : 'block';
+  };
 
   const applyDefaultSectionState = () => {
     if (isMobile()) {
@@ -475,6 +480,7 @@ export function createSceneControls({
   document.body.append(container);
 
   applyDefaultSectionState();
+  setPresetVisibility();
   setLightingVisibility(initialPreset);
   setPanelCollapsed(isMobile());
   setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
@@ -482,11 +488,22 @@ export function createSceneControls({
     currentPresetKey = presetKey;
     setPanelCollapsed(false);
     applyDefaultSectionState();
+    setPresetVisibility();
     setLightingVisibility(presetKey);
     drawer.scrollTop = 0;
     setQualityMenuOpen(!sectionQuality.collapsed);
   };
   window.addEventListener('resize', () => {
+    const mobileViewport = isMobile();
+    if (mobileViewport && !lastMobileViewport) {
+      setPanelCollapsed(true);
+    }
+    if (!mobileViewport && lastMobileViewport) {
+      setPanelCollapsed(false);
+      applyDefaultSectionState();
+    }
+    lastMobileViewport = mobileViewport;
+    setPresetVisibility();
     setLightingVisibility(currentPresetKey);
     setPanelCollapsed(panelCollapsed);
     setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
@@ -498,6 +515,7 @@ export function createSceneControls({
       if (presetSelect) {
         presetSelect.value = key;
       }
+      setPresetVisibility();
       setLightingVisibility(key);
       drawer.scrollTop = 0;
     },
