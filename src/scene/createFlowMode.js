@@ -224,7 +224,6 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     avg: 0,
     flowProfile: 'SOFT',
   };
-  const frequencyData = audioAnalyser ? new Uint8Array(audioAnalyser.data.length) : null;
   const roomState = {
     radius: SPHERE_BASE_RADIUS,
   };
@@ -427,11 +426,11 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
   };
   const update = (deltaTime) => {
     elapsed += deltaTime;
-    const audioReady = Boolean(audioAnalyser && frequencyData);
+    const audioReady = Boolean(audioAnalyser);
     const audioActive = audioReady && (typeof _isPlaying === 'function' ? _isPlaying() : true);
     state.audioActive = audioActive;
     if (state.flowEnabled && audioActive) {
-      audioAnalyser.getFrequencyData(frequencyData);
+      const frequencyData = audioAnalyser.getFrequencyData();
       const bass = sampleBandEnergy(frequencyData, 0, 8);
       const mid = sampleBandEnergy(frequencyData, 8, 24);
       const treble = sampleBandEnergy(frequencyData, 24, 64);
