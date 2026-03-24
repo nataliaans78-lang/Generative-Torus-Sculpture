@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 export function createLights(scene, settings) {
-  const ambientLight = new THREE.AmbientLight(0x293d9b, 0.12);
+  const ambientBase = 0.22;
+  const ambientLight = new THREE.AmbientLight(0x293d9b, ambientBase);
   scene.add(ambientLight);
 
   const keyLight = new THREE.DirectionalLight(settings.key.color, settings.key.intensity);
@@ -23,6 +24,21 @@ export function createLights(scene, settings) {
   const deepBlueAccentViolet = new THREE.PointLight(0xa78bfa, 0, 18, 2);
   deepBlueAccentViolet.position.set(-4.2, 1.8, -3.1);
   scene.add(deepBlueAccentViolet);
+
+  // subtle wall accents for Deep Blue
+  const deepWallLeft = new THREE.SpotLight(0x4fa3ff, 0, 18, Math.PI / 3, 0.6, 2);
+  const deepWallRight = new THREE.SpotLight(0x4fa3ff, 0, 18, Math.PI / 3, 0.6, 2);
+  deepWallLeft.position.set(-6.5, 1.1, 0.8);
+  deepWallRight.position.set(6.5, 1.1, -0.6);
+  const deepWallLeftTarget = new THREE.Object3D();
+  const deepWallRightTarget = new THREE.Object3D();
+  deepWallLeftTarget.position.set(-9.2, 1.0, -1.4);
+  deepWallRightTarget.position.set(9.2, 1.0, 1.2);
+  deepWallLeft.target = deepWallLeftTarget;
+  deepWallRight.target = deepWallRightTarget;
+  deepWallLeft.angle = Math.PI / 2.4;
+  deepWallRight.angle = Math.PI / 2.4;
+  scene.add(deepWallLeft, deepWallRight, deepWallLeftTarget, deepWallRightTarget);
 
   const centerDistance = settings.center?.distance ?? 9;
   const centerDecay = settings.center?.decay ?? 2;
@@ -95,14 +111,38 @@ export function createLights(scene, settings) {
 
   setLayoutBounds();
 
-  const setDeepBlueAccentsEnabled = (enabled) => {
-    if (enabled) {
-      deepBlueAccentBlue.intensity = 1.2;
-      deepBlueAccentViolet.intensity = 1.1;
+  const setFlowAccents = (presetKey, introPhase = 0) => {
+    const scale = 1 + introPhase * 0.2;
+    if (presetKey === 'DEEP_BLUE') {
+      deepBlueAccentBlue.intensity = 1.25 * scale;
+      deepBlueAccentViolet.intensity = 0.1 * scale;
+      ambientLight.intensity = ambientBase * (1 + introPhase * 0.12);
+      deepWallLeft.intensity = 1.2 * scale;
+      deepWallRight.intensity = 1.2 * scale;
       return;
     }
+    if (presetKey === 'FLOW_SOFT') {
+      deepBlueAccentBlue.intensity = 1.18 * scale;
+      deepBlueAccentViolet.intensity = 0.56 * scale;
+      ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
+      deepWallLeft.intensity = 0;
+      deepWallRight.intensity = 0;
+      return;
+    }
+    if (presetKey === 'FLOW_STRONG') {
+      deepBlueAccentBlue.intensity = 0.72 * scale;
+      deepBlueAccentViolet.intensity = 1.15 * scale;
+      ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
+      deepWallLeft.intensity = 0;
+      deepWallRight.intensity = 0;
+      return;
+    }
+    // fallback: disable for other presets (Deep Blue handled separately)
     deepBlueAccentBlue.intensity = 0;
     deepBlueAccentViolet.intensity = 0;
+    ambientLight.intensity = ambientBase;
+    deepWallLeft.intensity = 0;
+    deepWallRight.intensity = 0;
   };
 
   return {
@@ -112,7 +152,7 @@ export function createLights(scene, settings) {
     fillLight,
     deepBlueAccentBlue,
     deepBlueAccentViolet,
-    setDeepBlueAccentsEnabled,
+    setFlowAccents,
     centerLight,
     topEdgeLight,
     lowEdgeLight,

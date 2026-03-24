@@ -21,7 +21,7 @@ export const LIGHT_SETTINGS = {
     position: [4.4, 5.2, 3.6],
   },
   rim: {
-    color: 0x4f82ff,
+    color: 0x9ecbff,
     intensity: 2.0,
     position: [-4.8, 2.8, -5.6],
   },

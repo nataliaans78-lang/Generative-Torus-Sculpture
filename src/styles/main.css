@@ -1,3 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cabinet+Grotesk:wght@400;500;600&display=swap');
+
+:root {
+  --bg-0: #030814;
+  --bg-1: #050c1c;
+  --panel: rgba(9, 14, 28, 0.84);
+  --panel-strong: rgba(9, 14, 28, 0.92);
+  --border: rgba(255, 255, 255, 0.14);
+  --border-strong: rgba(136, 188, 255, 0.42);
+  --accent: #79f2ff;
+  --accent-2: #9ba7ff;
+  --text: #e8f1ff;
+  --muted: #9db4d8;
+  --shadow-soft: 0 18px 60px rgba(2, 6, 15, 0.45);
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -10,10 +29,51 @@ body {
 }
 
 body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: #060c18;
+  font-family: 'Space Grotesk', 'Cabinet Grotesk', system-ui, sans-serif;
+  background:
+    radial-gradient(120% 120% at 50% 20%, rgba(80, 165, 255, 0.12), transparent 60%),
+    radial-gradient(100% 100% at 50% 90%, rgba(0, 0, 0, 0.6), transparent 70%),
+    radial-gradient(120% 120% at 18% 20%, rgba(80, 165, 255, 0.18), transparent 52%),
+    radial-gradient(120% 120% at 78% 80%, rgba(123, 255, 228, 0.16), transparent 52%),
+    linear-gradient(140deg, #030814 0%, #050c1c 40%, #061025 100%);
   overflow: hidden;
-  color: #edf3ff;
+  color: var(--text);
+  letter-spacing: 0.01em;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -10%;
+  pointer-events: none;
+  background: radial-gradient(30% 30% at 50% 10%, rgba(255, 255, 255, 0.06), transparent 60%),
+    radial-gradient(20% 20% at 12% 60%, rgba(90, 191, 255, 0.12), transparent 70%);
+  mix-blend-mode: screen;
+  opacity: 0.8;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.06) 0%,
+      transparent 12%,
+      transparent 88%,
+      rgba(255, 255, 255, 0.04) 100%
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(255, 255, 255, 0.04) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+  opacity: 0.5;
+  z-index: 0;
 }
 
 canvas {
@@ -22,19 +82,21 @@ canvas {
 
 .portfolio-mobile-preset-title {
   position: fixed;
-  top: 10px;
+  top: 12px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 4;
   pointer-events: none;
-  padding: 6px 12px;
+  padding: 7px 14px;
   border-radius: 999px;
-  background: rgba(7, 11, 22, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  color: #edf3ff;
+  background: rgba(7, 11, 22, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-soft);
+  color: var(--text);
   font-size: 11px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  backdrop-filter: blur(10px);
 }
 
 .landing-active .portfolio-controls {
@@ -46,57 +108,92 @@ canvas {
   position: fixed;
   top: 16px;
   right: 16px;
-  width: min(320px, calc(100vw - 28px));
-  height: auto;
-  max-height: calc(100vh - 32px);
-  height: auto;
-  padding: 42px 14px 14px;
-  border-radius: 14px;
-  background: rgba(7, 11, 22, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  width: min(340px, calc(100vw - 28px));
+  max-height: calc(100vh - 12px);
+  padding: 46px 16px 16px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, rgba(12, 19, 36, 0.92), rgba(7, 11, 24, 0.9));
+  border: 1px solid rgba(146, 192, 255, 0.12);
+  box-shadow: var(--shadow-soft), 0 0 0 1px rgba(255, 255, 255, 0.015) inset;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  overflow-x: hidden;
-  overflow-y: hidden;
+  gap: 12px;
+  overflow: hidden;
   --panel-x: 0;
   --panel-y: 0;
   transform: translate(var(--panel-x), var(--panel-y));
   transform-origin: top center;
   transition:
-    transform 0.24s ease,
-    max-height 0.24s ease,
-    padding 0.24s ease;
+    transform 0.28s ease,
+    max-height 0.28s ease,
+    padding 0.28s ease,
+    opacity 0.28s ease;
+  backdrop-filter: blur(10px) saturate(1.1);
+  z-index: 3;
+}
+
+/* keep panel static to avoid clipping on click */
+
+.portfolio-controls::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(55% 55% at 20% 0%, rgba(95, 196, 255, 0.16), transparent 60%),
+    radial-gradient(48% 48% at 90% 16%, rgba(123, 255, 228, 0.12), transparent 60%);
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .portfolio-controls__panel-toggle {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  top: 8px;
-  height: 28px;
-  border-radius: 10px;
+  left: 50%;
+  transform: translateX(-52%);
+  width: calc(100% - 42px);
+  max-width: 360px;
+  top: 4px;
+  height: 30px;
+  border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(11, 16, 28, 0.92);
-  color: #edf3ff;
+  background: linear-gradient(180deg, rgba(13, 20, 36, 0.95), rgba(11, 16, 28, 0.9));
+  color: var(--text);
   cursor: pointer;
-  z-index: 2;
+  z-index: 8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.portfolio-controls__panel-toggle:hover {
+  border-color: rgba(121, 242, 255, 0.7);
+  color: #dffaff;
 }
 
 .portfolio-controls__drawer {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding-right: 6px;
+  padding-right: 8px;
+  padding-bottom: 8px;
   min-height: 0;
+  max-height: calc(100vh - 140px);
+  position: relative;
+  z-index: 1;
+  scrollbar-gutter: stable;
+  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
+.portfolio-controls__drawer::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
 .portfolio-controls__drawer::-webkit-scrollbar {
   width: 8px;
 }
@@ -107,7 +204,7 @@ canvas {
 }
 
 .portfolio-controls__drawer::-webkit-scrollbar-thumb {
-  background: rgba(131, 160, 216, 0.42);
+  background: linear-gradient(180deg, rgba(131, 160, 216, 0.48), rgba(121, 242, 255, 0.4));
   border-radius: 10px;
 }
 
@@ -117,28 +214,45 @@ canvas {
 }
 
 .portfolio-controls__section {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 12px;
-  background: rgba(8, 12, 26, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, rgba(8, 12, 26, 0.9), rgba(7, 10, 22, 0.82));
+  box-shadow: 0 12px 34px rgba(2, 8, 16, 0.36);
+  overflow: hidden;
+  position: relative;
+}
+
+.portfolio-controls__section::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(60% 40% at 50% -10%, rgba(124, 255, 214, 0.16), transparent 55%);
+  opacity: 0.6;
 }
 
 .ui-section__header {
   width: 100%;
-  padding: 10px 12px;
+  padding: 11px 14px;
   background: transparent;
-  color: inherit;
+  color: var(--text);
   display: flex;
   justify-content: space-between;
   align-items: center;
   border: none;
   cursor: pointer;
   font-size: 11px;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
+  position: relative;
+  z-index: 1;
 }
 
 .ui-section__chevron {
-  transition: transform 0.2s ease;
+  transition: transform 0.22s ease;
+  color: var(--muted);
+  margin-right: -5px;
 }
 
 .ui-section--collapsed .ui-section__chevron {
@@ -149,44 +263,72 @@ canvas {
   overflow: hidden;
   transition:
     max-height 0.25s ease,
-    opacity 0.2s ease;
+    opacity 0.22s ease;
 }
 
 .ui-section__content-inner {
-  padding: 8px 12px 12px;
+  padding: 10px 14px 14px;
   display: grid;
-  gap: 8px;
+  gap: 10px;
+  position: relative;
+  z-index: 1;
 }
 
 .portfolio-controls__actions {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
-  gap: 8px;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
 }
 
 .portfolio-controls__button,
 .portfolio-controls__select {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(11, 18, 32, 0.9);
-  color: #edf3ff;
-  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(180deg, rgba(12, 18, 34, 0.95), rgba(11, 18, 36, 0.9));
+  color: var(--text);
+  padding: 9px 11px;
   font: inherit;
   cursor: pointer;
+  letter-spacing: 0.02em;
+  transition:
+    transform 0.12s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.portfolio-controls__select option {
+  color: #e8f1ff;
+  background: #0b1420;
+}
+
+.portfolio-controls__button:hover,
+.portfolio-controls__select:hover {
+  border-color: rgba(121, 242, 255, 0.7);
+  box-shadow: 0 12px 22px rgba(13, 45, 74, 0.34);
+}
+
+.portfolio-controls__button:active {
+  transform: translateY(1px);
 }
 
 .portfolio-controls__button--play {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-weight: 700;
+  background: radial-gradient(110% 110% at 30% 20%, rgba(121, 242, 255, 0.26), transparent 62%),
+    linear-gradient(180deg, rgba(14, 34, 46, 0.95), rgba(8, 18, 32, 0.95));
+  border-color: rgba(121, 242, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(121, 242, 255, 0.35) inset;
 }
 
 .qualityMenu {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  gap: 10px;
   max-width: 100%;
   margin-top: 2px;
 }
@@ -198,36 +340,38 @@ canvas {
 
 .qualityToggle {
   display: none;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.24);
   background: rgba(12, 20, 37, 0.92);
-  color: #edf3ff;
-  padding: 9px 11px;
+  color: var(--text);
+  padding: 10px 12px;
   text-align: left;
   cursor: pointer;
   letter-spacing: 0.04em;
 }
 
 .qualityOption {
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(12, 20, 37, 0.9);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(180deg, rgba(13, 21, 36, 0.9), rgba(12, 18, 32, 0.92));
   color: rgba(231, 240, 255, 0.92);
-  min-height: 36px;
-  padding: 8px 0;
+  min-height: 38px;
+  padding: 9px 0;
   text-align: center;
   cursor: pointer;
   font-size: 12px;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   transition:
     background 0.18s ease,
     border-color 0.18s ease,
-    transform 0.12s ease;
+    transform 0.12s ease,
+    box-shadow 0.18s ease;
 }
 
 .qualityOption:hover {
-  border-color: rgba(188, 213, 255, 0.5);
-  background: rgba(22, 35, 64, 0.92);
+  border-color: rgba(188, 213, 255, 0.7);
+  background: rgba(22, 35, 64, 0.94);
+  box-shadow: 0 10px 24px rgba(11, 25, 48, 0.4);
 }
 
 .qualityOption:active {
@@ -235,47 +379,86 @@ canvas {
 }
 
 .qualityOption.is-active {
-  border-color: rgba(191, 216, 255, 0.78);
-  background: linear-gradient(180deg, rgba(51, 92, 166, 0.64), rgba(32, 62, 118, 0.68));
+  border-color: rgba(191, 216, 255, 0.9);
+  background: linear-gradient(160deg, rgba(121, 242, 255, 0.28), rgba(58, 92, 168, 0.8));
   color: #f5f9ff;
-  box-shadow: inset 0 0 0 1px rgba(198, 219, 255, 0.18);
+  box-shadow:
+    inset 0 0 0 1px rgba(198, 219, 255, 0.32),
+    0 14px 28px rgba(39, 77, 132, 0.45);
 }
 
 .portfolio-controls__slider {
   display: grid;
-  gap: 4px;
+  gap: 6px;
+}
+
+.portfolio-controls__slider-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .portfolio-controls__slider input[type='range'] {
   width: 100%;
+  appearance: none;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(121, 242, 255, 0.9), rgba(80, 138, 255, 0.65));
+  position: relative;
+  outline: none;
 }
 
-.portfolio-controls__slider-label {
-  font-size: 12px;
+.portfolio-controls__slider input[type='range']::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #dffaff, #7cf0ff);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  cursor: pointer;
 }
 
-.portfolio-controls__button--upload {
-  width: 100%;
+.portfolio-controls__slider input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #dffaff, #7cf0ff);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  cursor: pointer;
 }
 
+.portfolio-controls__button--upload,
 .portfolio-controls__button--reset {
   width: 100%;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
 }
 
 .portfolio-controls__reset-row {
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .portfolio-controls--collapsed {
   --panel-x: 0;
   --panel-y: 0;
-  max-height: 46px;
-  padding: 8px 10px;
+  max-height: none;
+  height: auto;
+  gap: 0;
+  padding: 24px 12px 22px;
+  box-shadow: none;
 }
 
 .portfolio-controls--collapsed .portfolio-controls__drawer {
   opacity: 0;
   pointer-events: none;
+  max-height: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
 .portfolio-controls--collapsed .qualityMenu {
@@ -296,16 +479,21 @@ canvas {
     right: auto;
     bottom: 16px;
     top: auto;
-    border-radius: 16px;
+    border-radius: 18px;
     --panel-x: -50%;
-    padding-top: 42px;
-    height: auto;
-    max-height: min(448px, calc(100vh - 208px));
+    padding-top: 46px;
+    max-height: min(460px, calc(100vh - 200px));
+    box-shadow: 0 14px 48px rgba(3, 8, 18, 0.55);
+  }
+  .ui-section__chevron {
+    margin-right: -4px;
   }
   .portfolio-controls--collapsed {
     --panel-y: 0;
-    max-height: 46px;
-    padding: 8px 10px;
+    max-height: none;
+    height: auto;
+    gap: 0;
+    padding: 20px 12px 18px;
   }
   .qualityToggle {
     display: none;
@@ -335,7 +523,7 @@ canvas {
   .qualityMenu {
     display: none;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    max-height: min(160px, 35vh);
+    max-height: min(170px, 38vh);
     overflow-y: auto;
     overflow-x: hidden;
     border: 1px solid rgba(255, 255, 255, 0.18);
@@ -352,5 +540,12 @@ canvas {
 @media (min-width: 769px) {
   .portfolio-mobile-preset-title {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
   }
 }

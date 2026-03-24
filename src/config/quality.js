@@ -11,8 +11,8 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   const dpr = pixelRatio || window.devicePixelRatio;
   let preset = {
     level: QUALITY_LEVELS.LOW,
-    tubularSegments: 90,
-    radialSegments: 45,
+    tubularSegments: 110,
+    radialSegments: 55,
     pixelRatioCap: 1,
     shadowsEnabled: false,
     shadowMapSize: 0,
@@ -20,18 +20,18 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   if (resolved === QUALITY_LEVELS.MEDIUM) {
     preset = {
       level: QUALITY_LEVELS.MEDIUM,
-      tubularSegments: 120,
-      radialSegments: 60,
-      pixelRatioCap: 1.25,
+      tubularSegments: 160,
+      radialSegments: 80,
+      pixelRatioCap: 1.4,
       shadowsEnabled: false,
       shadowMapSize: 512,
     };
   } else if (resolved === QUALITY_LEVELS.HIGH) {
     preset = {
       level: QUALITY_LEVELS.HIGH,
-      tubularSegments: 140,
-      radialSegments: 70,
-      pixelRatioCap: 2,
+      tubularSegments: 220,
+      radialSegments: 110,
+      pixelRatioCap: 2.2,
       shadowsEnabled: true,
       shadowMapSize: 1024,
     };

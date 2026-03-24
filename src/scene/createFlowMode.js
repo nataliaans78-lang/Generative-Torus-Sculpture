@@ -13,6 +13,11 @@ const FOG_COLOR = 0x050814;
 const FOG_NEAR = 15;
 const FOG_FAR = 120;
 const LOW_QUALITY_SPOT_COUNT = 2;
+const AUDIO_REACTIVE_SPOT_BASE = 0.6;
+const AUDIO_REACTIVE_PULSE_CAP_BASE = 5.0;
+const AUDIO_REACTIVE_WALL_OPACITY_BASE = 0.6;
+const AUDIO_REACTIVE_SCALE_MIN = 0.3;
+const AUDIO_REACTIVE_SCALE_MAX = 1.5;
 const MOBILE_HIGH_WALL_SPOT_FACTOR = 0.75;
 const GLOBAL_ROOM_BRIGHTNESS = 1.5;
 const FLOW_PALETTE = Object.freeze([
@@ -21,6 +26,8 @@ const FLOW_PALETTE = Object.freeze([
   new THREE.Color('#A855F7'),
   new THREE.Color('#FF4FD8'),
 ]);
+const FLOW_ACCENT_BLUE = new THREE.Color('#5B8CFF');
+const FLOW_ACCENT_VIOLET = new THREE.Color('#A855F7');
 
 function smooth(current, target, deltaTime, smoothingFactor = SMOOTHING_FACTOR) {
   const alpha = 1 - Math.exp(-deltaTime * smoothingFactor);
@@ -123,7 +130,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     map: wallSpotTexture,
     color: 0xa4cfff,
     transparent: true,
-    opacity: 0.22,
+    opacity: 0.3,
     blending: THREE.AdditiveBlending,
     depthWrite: false,
     side: THREE.DoubleSide,
@@ -192,6 +199,10 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     activeSpotCount: SPOT_COUNT,
     activeWallSpotCount: WALL_SPOT_COUNT,
     audioActive: false,
+    audioReactiveScale: 1,
+    hasInteracted: false,
+    introPhase: 1,
+    targetIntroPhase: 1,
   };
   let roomEmissiveBase = 0.2 * GLOBAL_ROOM_BRIGHTNESS;
   const mouse = new THREE.Vector2(0, 0);
@@ -223,6 +234,8 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     high: 0,
     avg: 0,
     flowProfile: 'SOFT',
+    audioActive: false,
+    introPhase: 1,
   };
   const roomState = {
     radius: SPHERE_BASE_RADIUS,
@@ -267,6 +280,12 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
       const s = roomState.radius * wallSpotScales[i] * 0.82;
       wallSpots[i].scale.set(s, s, 1);
     }
+    const violetWeight = state.flowProfile === 'DEEP_BLUE' ? 0.08 : state.flowProfile === 'STRONG' ? 0.8 : 0.45;
+    const accentTarget = new THREE.Color().lerpColors(
+      FLOW_ACCENT_BLUE,
+      FLOW_ACCENT_VIOLET,
+      violetWeight,
+    );
     for (let i = 0; i < SPOT_COUNT; i += 1) {
       spotLights[i].distance = roomState.radius * 3.2;
     }
@@ -329,10 +348,21 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     });
   };
   const getFlowDimFactor = () => {
-    const base = state.flowProfile === 'STRONG' ? 0.65 : 0.75;
-    return THREE.MathUtils.clamp(base - state.dotIntensity * 0.01, 0.55, 0.85);
+    const introBoost = state.introPhase;
+    const base = state.flowProfile === 'STRONG' ? 0.96 : 0.985;
+    const introLift = introBoost * 0.02;
+    return THREE.MathUtils.clamp(base + introLift - state.dotIntensity * 0.004, 0.9, 1.05);
   };
+  const getAudioReactiveScale = () =>
+    THREE.MathUtils.clamp(
+      state.audioReactiveScale ?? 1,
+      AUDIO_REACTIVE_SCALE_MIN,
+      AUDIO_REACTIVE_SCALE_MAX,
+    );
   const updateSpotTargets = (deltaTime) => {
+    const userScale = getAudioReactiveScale();
+    const reactiveScale = state.audioActive ? AUDIO_REACTIVE_SPOT_BASE * userScale : 1;
+    const reactivePulseCap = AUDIO_REACTIVE_PULSE_CAP_BASE * userScale;
     const baseSpeed = state.flowSpeed;
     const speed = baseSpeed * (1 + avgSmoothed * 1.5);
     const emitterRadius = roomState.radius * 0.34;
@@ -340,8 +370,16 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     const activeCount = Math.max(1, state.activeSpotCount);
     const energy = Math.max(0.08, avgSmoothed);
     const pulseEnergy = Math.max(0.05, bassSmoothed);
-    const pulseTarget = THREE.MathUtils.clamp(0.8 + pulseEnergy * state.pulseIntensity * 5, 0, 10);
-    const sweepTarget = 0.6 + energy * state.dotIntensity * 3;
+    const pulseTarget = THREE.MathUtils.clamp(
+      0.7 + pulseEnergy * state.pulseIntensity * 0.95,
+      0,
+      state.flowProfile === 'STRONG' ? 2.2 : 1.8,
+    );
+    const introSweepLift = state.introPhase * 0.18;
+    const sweepTarget =
+      (state.flowProfile === 'STRONG' ? 1.28 : 1.05) +
+      energy * state.dotIntensity * (state.flowProfile === 'STRONG' ? 0.46 : 0.38) +
+      introSweepLift;
     const baseAngle = THREE.MathUtils.clamp(
       (state.flowAngle || BASE_SPOT_ANGLE) * state.dotSize,
       Math.PI / 14,
@@ -355,6 +393,11 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     const sweepPenumbra = THREE.MathUtils.clamp(0.4 + bassSmoothed * 0.2, 0.4, 0.6);
     const pulsePenumbra = THREE.MathUtils.clamp(0.45 + bassSmoothed * 0.15, 0.45, 0.7);
     mouseConductor.set(mouse.x * roomState.radius * 0.08, mouse.y * roomState.radius * 0.06, 0);
+    const accentTarget = new THREE.Color().lerpColors(
+      FLOW_ACCENT_BLUE,
+      FLOW_ACCENT_VIOLET,
+      state.flowProfile === 'STRONG' ? 0.3 : 0.48,
+    );
     for (let i = 0; i < SPOT_COUNT; i += 1) {
       const active = i < state.activeSpotCount;
       if (i === pulseSpotIndex) {
@@ -385,12 +428,31 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
       }
       const t = elapsed * (0.03 + midSmoothed * 0.06) + i * 0.11;
       paletteSample(t, tempColor);
-      tempColor.lerp(whiteColor, highSmoothed * 0.18);
+      const idleColorFloor = Math.min(
+        0.95,
+        (state.flowProfile === 'STRONG' ? 0.62 : 0.52) + state.introPhase * 0.12,
+      );
+      const colorMix = THREE.MathUtils.clamp(
+        idleColorFloor + energy * 0.18 + highSmoothed * 0.1,
+        0,
+        0.78,
+      );
+      tempColor.lerp(accentTarget, colorMix);
+      tempColor.lerp(whiteColor, highSmoothed * 0.05);
       spotLights[i].color.copy(tempColor);
       const targetIntensity =
         i === pulseSpotIndex
-          ? pulseTarget
-          : Math.max(state.audioActive ? 0.6 : 0, sweepTarget * spotBaseIntensity[i]);
+          ? Math.min(
+              pulseTarget * (state.audioActive ? reactiveScale : 1) * (state.introPhase ? 1.05 : 1),
+              reactivePulseCap,
+            )
+          : Math.max(
+              (state.flowProfile === 'STRONG' ? 0.56 : 0.46) + state.introPhase * 0.12,
+              sweepTarget *
+                spotBaseIntensity[i] *
+                (state.audioActive ? reactiveScale : 1) *
+                (state.introPhase ? 1.05 : 1),
+            );
       spotLights[i].angle = i === pulseSpotIndex ? baseAngle : sweepAngle;
       spotLights[i].penumbra = i === pulseSpotIndex ? pulsePenumbra : sweepPenumbra;
       spotIntensitySmoothed[i] = smooth(
@@ -403,7 +465,10 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     }
   };
   const updateWallSpots = () => {
-    const subtle = 0.14 + avgSmoothed * (state.flowProfile === 'STRONG' ? 0.14 : 0.08);
+    const userScale = getAudioReactiveScale();
+    const subtle =
+      (0.16 + avgSmoothed * (state.flowProfile === 'STRONG' ? 0.045 : 0.032)) *
+      (state.audioActive ? AUDIO_REACTIVE_WALL_OPACITY_BASE * userScale : 1);
     for (let i = 0; i < WALL_SPOT_COUNT; i += 1) {
       const active = i < state.activeWallSpotCount;
       const spot = wallSpots[i];
@@ -426,6 +491,8 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
   };
   const update = (deltaTime) => {
     elapsed += deltaTime;
+    // lerp intro phase toward target
+    state.introPhase += (state.targetIntroPhase - state.introPhase) * Math.min(1, deltaTime * 1.5);
     const audioReady = Boolean(audioAnalyser);
     const audioActive = audioReady && (typeof _isPlaying === 'function' ? _isPlaying() : true);
     state.audioActive = audioActive;
@@ -451,6 +518,8 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     reactiveState.high = highSmoothed;
     reactiveState.avg = avgSmoothed;
     reactiveState.flowProfile = state.flowProfile;
+    reactiveState.introPhase = state.introPhase;
+    reactiveState.audioActive = audioActive;
     if (state.flowEnabled) {
       updateWallSpots();
       applyLightingDim(getFlowDimFactor());
@@ -533,6 +602,10 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
       state.flowProfile === 'STRONG' ? Math.min(roomEmissiveBase, 0.3) : roomEmissiveBase;
     applySpotBudget();
   };
+  const setHasInteracted = (enabled) => {
+    state.hasInteracted = Boolean(enabled);
+    state.targetIntroPhase = state.hasInteracted ? 0 : 1;
+  };
   const setOptions = (options = {}) => {
     if (typeof options.dotIntensity === 'number') {
       state.dotIntensity = options.dotIntensity;
@@ -548,6 +621,13 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     }
     if (typeof options.dotSize === 'number') {
       state.dotSize = options.dotSize;
+    }
+    if (typeof options.audioReactiveScale === 'number') {
+      state.audioReactiveScale = THREE.MathUtils.clamp(
+        options.audioReactiveScale,
+        AUDIO_REACTIVE_SCALE_MIN,
+        AUDIO_REACTIVE_SCALE_MAX,
+      );
     }
     const angle = THREE.MathUtils.clamp(
       (state.flowAngle || BASE_SPOT_ANGLE) * state.dotSize,
@@ -590,6 +670,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     setEnvironment,
     setBaseLightIntensities,
     setQuality,
+    setHasInteracted,
     update,
     dispose() {
       window.removeEventListener('pointermove', pointerHandler);

@@ -200,17 +200,27 @@ export function createSceneControls({
     value: initialLighting.lightMotionSpeed ?? 0.6,
     onInput: (value) => onLightingChange?.({ lightMotionSpeed: value }),
   });
+  const audioReactiveSlider = createSlider({
+    label: 'Audio Reactivity',
+    min: 0.4,
+    max: 1.4,
+    step: 0.05,
+    value: initialLighting.audioReactiveScale ?? 1,
+    onInput: (value) => onLightingChange?.({ audioReactiveScale: value }),
+  });
   sectionLighting.inner.append(
     keySlider.row,
     rimSlider.row,
     spotSlider.row,
     focusSlider.row,
     speedSlider.row,
+    audioReactiveSlider.row,
   );
   const setMobileDeepBlueLightingCompact = (enabled) => {
     spotSlider.row.style.display = enabled ? 'none' : '';
     focusSlider.row.style.display = enabled ? 'none' : '';
     speedSlider.row.style.display = enabled ? 'none' : '';
+    audioReactiveSlider.row.style.display = enabled ? 'none' : '';
   };
   const gridCountMin = Math.max(1, Math.floor(gridCountLimits?.min ?? 2));
   const gridCountMax = Math.max(gridCountMin, Math.floor(gridCountLimits?.max ?? 5));
@@ -223,7 +233,7 @@ export function createSceneControls({
       ? Math.max(gridCountMin, Math.min(gridCountMax, Math.floor(initialScene.gridCount)))
       : gridCountDefault;
 
-  const spacingSlider = createSlider({
+  const gridCountSlider = createSlider({
     label: 'Grid Count',
     min: gridCountMin,
     max: gridCountMax,
@@ -247,7 +257,7 @@ export function createSceneControls({
     value: initialScene.globalRotationSpeed ?? 0.055,
     onInput: (value) => onSceneChange?.({ globalRotationSpeed: value }),
   });
-  sectionScene.inner.append(spacingSlider.row, gridSpacingSlider.row, rotationSlider.row);
+  sectionScene.inner.append(gridCountSlider.row, gridSpacingSlider.row, rotationSlider.row);
 
   const qualityOptions = [QUALITY_LEVELS.HIGH, QUALITY_LEVELS.MEDIUM, QUALITY_LEVELS.LOW];
   const qualityToggle = document.createElement('button');
@@ -350,13 +360,20 @@ export function createSceneControls({
     if (collapsed) {
       sections.forEach((section) => setSectionCollapsed(section, true));
       forceCloseQualityMenu();
+      drawer.style.maxHeight = '0px';
     } else {
+      drawer.style.maxHeight = '';
+      drawer.scrollTop = 0;
       setQualityMenuOpen(!sectionQuality.collapsed);
     }
+    drawer.scrollTop = 0;
     requestAnimationFrame(refreshExpandedSectionHeights);
   };
 
   const setSectionCollapsed = (section, collapsed) => {
+    if (collapsed && section.wrapper.contains(document.activeElement)) {
+      document.activeElement?.blur();
+    }
     section.collapsed = collapsed;
     section.wrapper.classList.toggle('ui-section--collapsed', collapsed);
     section.content.style.maxHeight = collapsed ? '0' : `${section.inner.scrollHeight}px`;
@@ -387,13 +404,17 @@ export function createSceneControls({
     if (panelCollapsed) return;
     setQualityMenuOpen(!qualityMenuOpen);
   });
-  panelToggle.addEventListener('click', () => {
+  const togglePanel = (ev) => {
+    ev?.preventDefault?.();
+    ev?.stopPropagation?.();
     const nextCollapsed = !panelCollapsed;
     if (nextCollapsed) {
       forceCloseQualityMenu();
     }
     setPanelCollapsed(nextCollapsed);
-  });
+  };
+
+  panelToggle.addEventListener('click', togglePanel);
   sectionQuality.inner.append(qualityPicker);
   qualityButtons.forEach((btn, key) => btn.classList.toggle('is-active', key === initialQuality));
 
@@ -526,9 +547,11 @@ export function createSceneControls({
       if (typeof values.spotFocus === 'number') focusSlider.setValue(values.spotFocus);
       if (typeof values.lightMotionSpeed === 'number')
         speedSlider.setValue(values.lightMotionSpeed);
+      if (typeof values.audioReactiveScale === 'number')
+        audioReactiveSlider.setValue(values.audioReactiveScale);
     },
     setSceneValues(values) {
-      if (typeof values.gridCount === 'number') spacingSlider.setValue(values.gridCount);
+      if (typeof values.gridCount === 'number') gridCountSlider.setValue(values.gridCount);
       if (typeof values.gridSpacing === 'number') gridSpacingSlider.setValue(values.gridSpacing);
       if (typeof values.globalRotationSpeed === 'number')
         rotationSlider.setValue(values.globalRotationSpeed);
@@ -536,10 +559,10 @@ export function createSceneControls({
     setGridCountLimits(limits = {}) {
       const min = Math.max(1, Math.floor(limits.min ?? gridCountMin));
       const max = Math.max(min, Math.floor(limits.max ?? gridCountMax));
-      spacingSlider.setRange(min, max);
-      const currentValue = spacingSlider.getValue();
+      gridCountSlider.setRange(min, max);
+      const currentValue = gridCountSlider.getValue();
       const clamped = Math.max(min, Math.min(max, currentValue));
-      if (clamped !== currentValue) spacingSlider.setValue(clamped);
+      if (clamped !== currentValue) gridCountSlider.setValue(clamped);
     },
     setQuality(value) {
       qualityButtons.forEach((btn, key) => btn.classList.toggle('is-active', key === value));

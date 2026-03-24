@@ -1,37 +1,45 @@
-const DEFAULT_UI_STATE = Object.freeze({
-  presetKey: 'DEEP_BLUE',
-  flowEnabled: false,
-  roomEnabled: true,
-  fogEnabled: true,
-  lighting: Object.freeze({
-    keyIntensity: 4.2,
-    rimIntensity: 2.8,
-    fillIntensity: 0,
-    centerIntensity: 1.15,
-    spotIntensity: 0,
-    flowPulseIntensity: 2.2,
-    spotFocus: 1.0,
-    flowAngle: Math.PI / 12,
-    lightMotionSpeed: 1.0,
-  }),
-  scene: Object.freeze({
-    gridCount: 2,
-    gridSpacing: 1.75,
-    globalRotationSpeed: 0.03,
-    driftAmp: 0.03,
-  }),
-  room: Object.freeze({
-    color: 0x060c18,
-    emissiveIntensity: 0.2,
-  }),
-  fog: Object.freeze({
-    enabled: true,
-    color: 0x050814,
-    near: 10,
-    far: 45,
-  }),
-  quality: 'HIGH',
-});
+import { PRESETS } from '../config/presets.js';
+
+const presetToState = (presetKey = 'DEEP_BLUE') => {
+  const preset = PRESETS[presetKey] ?? PRESETS.DEEP_BLUE;
+  return {
+    presetKey,
+    flowEnabled: preset.flowEnabled,
+    roomEnabled: preset.roomEnabled,
+    fogEnabled: preset.fogEnabled,
+    lighting: {
+      keyIntensity: preset.lighting.keyIntensity,
+      rimIntensity: preset.lighting.rimIntensity,
+      fillIntensity: preset.lighting.fillIntensity ?? 0,
+      centerIntensity: preset.lighting.centerIntensity ?? 0,
+      spotIntensity: preset.lighting.flowSpotIntensity ?? 0,
+      flowPulseIntensity: preset.lighting.flowPulseIntensity ?? 0,
+      spotFocus: preset.lighting.spotFocus ?? 1,
+      flowAngle: preset.lighting.flowAngle ?? Math.PI / 12,
+      lightMotionSpeed: preset.lighting.flowSpeed ?? 1,
+      audioReactiveScale: 1.0,
+    },
+    scene: {
+      gridCount: preset.grid.gridCount,
+      gridSpacing: preset.grid.gridSpacing,
+      globalRotationSpeed: preset.motion.groupRot,
+      driftAmp: preset.motion.driftAmp,
+    },
+    room: {
+      color: preset.room.color,
+      emissiveIntensity: preset.room.emissiveIntensity,
+    },
+    fog: {
+      enabled: preset.fog.enabled,
+      color: preset.fog.color,
+      near: preset.fog.near ?? 10,
+      far: preset.fog.far ?? 45,
+    },
+    quality: 'HIGH',
+  };
+};
+
+const DEFAULT_UI_STATE = Object.freeze(presetToState('DEEP_BLUE'));
 
 function cloneDefaultState() {
   return {

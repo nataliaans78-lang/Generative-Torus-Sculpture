@@ -17,7 +17,7 @@ export function createLanding({
   glow.className = 'landing__glow';
   const badge = document.createElement('p');
   badge.className = 'landing__badge';
-  badge.textContent = 'Immersive Three.js Scene';
+  badge.textContent = 'Immersive Realtime Sculpture';
   const heading = document.createElement('h1');
   heading.className = 'landing__title';
   heading.id = 'landing-title';
@@ -25,9 +25,9 @@ export function createLanding({
   const list = document.createElement('ul');
   list.className = 'landing__features';
   [
-    'Flow lighting with gobo dots',
-    'Audio-reactive pulse engine',
-    'Preset-based scene control',
+    'Dynamic light choreography',
+    'Audio-reactive motion',
+    'Preset-driven cinematic control',
   ].forEach((label) => {
     const item = document.createElement('li');
     item.className = 'landing__feature';
@@ -36,7 +36,7 @@ export function createLanding({
   });
   const footer = document.createElement('p');
   footer.className = 'landing__hint';
-  footer.textContent = 'Tip: Press Enter to start';
+  footer.textContent = 'Press Enter to begin';
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'landing__cta';

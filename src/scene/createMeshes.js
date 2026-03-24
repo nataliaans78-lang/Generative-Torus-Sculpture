@@ -242,47 +242,200 @@ export function createTorusCluster(
     hoveredIndex = Number.isInteger(index) && index >= 0 && index < count ? index : -1;
   };
   let elapsed = 0;
+  let introTime = 0;
+  const INTRO_DURATION = 2.6;
+  let audioBlend = 0;
+  let deepAudioBlend = 0;
+  let deepBass = 0;
+  let deepMid = 0;
+  let deepHigh = 0;
+  let deepAvg = 0;
   const update = (deltaTime, reactive = null) => {
     elapsed += deltaTime;
+    introTime += deltaTime;
+
     const smoothBass = reactive?.bass ?? 0;
     const smoothMid = reactive?.mid ?? 0;
     const smoothHigh = reactive?.high ?? 0;
-    const rotSpeedX = 0.005 + smoothHigh * 0.02;
-    const rotSpeedY = 0.00375 + smoothMid * 0.015;
-    const liftAmp = 0.002 + smoothBass * 0.0075;
-    const rhythmMix = smoothBass * 0.6 + smoothMid * 0.4;
-    const hoverLerp = THREE.MathUtils.clamp(deltaTime * 0.10908421875, 0, 1);
+    const smoothAvg = reactive?.avg ?? 0;
+    const flowProfile = reactive?.flowProfile ?? 'SOFT';
+    const audioActive = Boolean(reactive?.audioActive);
+    // smooth audio activation to avoid jumps when music starts
+    audioBlend = THREE.MathUtils.lerp(audioBlend, audioActive ? 1 : 0, deltaTime * 2.5);
+    const deepAudioTarget = flowProfile === 'DEEP_BLUE' && audioActive ? 1 : 0;
+    deepAudioBlend = THREE.MathUtils.lerp(
+      deepAudioBlend,
+      deepAudioTarget,
+      THREE.MathUtils.clamp(deltaTime * 2.2, 0, 1),
+    );
+    deepBass = THREE.MathUtils.lerp(deepBass, smoothBass, deepAudioBlend);
+    deepMid = THREE.MathUtils.lerp(deepMid, smoothMid, deepAudioBlend);
+    deepHigh = THREE.MathUtils.lerp(deepHigh, smoothHigh, deepAudioBlend);
+    deepAvg = THREE.MathUtils.lerp(deepAvg, deepBass * 0.6 + deepMid * 0.3 + deepHigh * 0.1, deepAudioBlend);
+
+    const profileScale = flowProfile === 'STRONG' ? 1.12 : 1.0;
+
+    const introT = THREE.MathUtils.clamp(introTime / INTRO_DURATION, 0, 1);
+    const hoverLerp = THREE.MathUtils.clamp(deltaTime * 0.2, 0, 1);
+
+    const bass = flowProfile === 'DEEP_BLUE' ? deepBass : smoothBass;
+    const mid = flowProfile === 'DEEP_BLUE' ? deepMid : smoothMid;
+    const high = flowProfile === 'DEEP_BLUE' ? deepHigh : smoothHigh;
+    const avg = flowProfile === 'DEEP_BLUE' ? deepAvg : smoothAvg;
+
+    // shared motion params
+    const rotSpeedBaseX = 0.005 + high * 0.028 * profileScale;
+    const rotSpeedBaseY = 0.0038 + mid * 0.022 * profileScale;
+    const liftBase = 0.0025 + bass * 0.018 * profileScale;
+    const pulseScaleAmp = 0.012 + bass * 0.05 * profileScale;
+    const twistAmp = 0.025 + mid * 0.06 * profileScale;
+    const shimmerAmp = high * 0.035;
+    const depthSwayAmp = 0.004 + avg * 0.012;
+
     for (let i = 0; i < count; i += 1) {
       const i3 = i * 3;
+
       const hoverTarget = i === hoveredIndex ? 1 : 0;
       hoverWeights[i] = THREE.MathUtils.lerp(hoverWeights[i], hoverTarget, hoverLerp);
       const hover = hoverWeights[i];
+      const hoverRotDamp = 1 - hover * 0.45;
+
       const baseX = basePositions[i3] + baseOffsets[i3];
       const baseY = basePositions[i3 + 1] + baseOffsets[i3 + 1];
       const baseZ = basePositions[i3 + 2] + baseOffsets[i3 + 2];
       const phase = phases[i];
-      const driftX = Math.sin(elapsed * 0.22 + phase) * driftXAmp;
-      const driftY =
+
+      // intro motion (clean, shared)
+      const introOffset = Math.sin(elapsed * 0.8 + phase * 0.35) * 0.006;
+      const introLift = Math.sin(elapsed * 0.9) * 0.012;
+      const introTwist = Math.sin(elapsed * 0.55) * 0.08;
+      const introScale = 1 + Math.sin(elapsed * 1.1) * 0.018;
+
+      const randomPulse =
+        Math.sin(elapsed * (0.9 + phase * 0.12) + phase * 3.1) * (0.004 + smoothAvg * 0.01);
+      const randomLift =
+        Math.cos(elapsed * (0.7 + phase * 0.08) + phase * 2.4) * (0.006 + smoothBass * 0.012);
+      const basePulse =
+        Math.sin(elapsed * (0.85 + phase * 0.05) + phase * 2.1) * (0.008 + smoothAvg * 0.01);
+
+    const bassPulseBlend = flowProfile === 'DEEP_BLUE' ? deepAudioBlend : audioBlend;
+    const bassPulse = Math.sin(elapsed * 2.2 + phase * 1.3) * pulseScaleAmp * bassPulseBlend;
+
+      // base drift
+      let driftX =
+        Math.sin(elapsed * 0.22 + phase) * driftXAmp +
+        Math.sin(elapsed * 0.95 + phase * 1.1) * smoothMid * 0.01;
+      let driftY =
         Math.sin(elapsed * 0.5 + phase * 0.7) * driftYAmp +
-        Math.sin(elapsed * 1.2 + phase) * liftAmp +
+        Math.sin(elapsed * 1.2 + phase) * liftBase +
         hover * 0.003;
-      const driftZ = Math.cos(elapsed * 0.26 + phase * 1.1) * driftZAmp;
-      TEMP_VECTOR.set(baseX + driftX, baseY + driftY, baseZ + driftZ);
-      const rhythmTurn = Math.sin(elapsed * 0.42 + phase * 0.25) * (0.03 + rhythmMix * 0.02);
-      const hoverSpin = hover * (Math.PI * 2);
-      const rotationX = elapsed * rotSpeedX * rotationVariance[i] + phase * 0.02 + hoverSpin;
-      const rotationY =
-        elapsed * rotSpeedY * rotationVariance[i] + phase * 0.015 + rhythmTurn + hover * 0.0175;
-      TEMP_EULER.set(
-        rotationX,
-        rotationY * 1.2 * axisVariance[i3 + 1],
-        rotationX * 0.9 * axisVariance[i3 + 2],
-      );
+      let driftZ =
+        Math.cos(elapsed * 0.26 + phase * 1.1) * driftZAmp +
+        Math.cos(elapsed * 0.82 + phase * 0.9) * depthSwayAmp;
+      driftZ += Math.sin(elapsed * 0.3 + phase) * 0.02;
+
+      // idle / audio extra drift
+      const idleDriftBlend = introT * (audioActive ? 0 : 1);
+      driftX += Math.sin(elapsed * 0.3 + phase) * 0.01 * idleDriftBlend;
+      driftZ += Math.cos(elapsed * 0.35 + phase) * 0.01 * idleDriftBlend;
+      if (audioBlend > 0 && flowProfile !== 'DEEP_BLUE') {
+        driftX +=
+          Math.sin(elapsed * 0.9 + phase * 1.3) * (0.01 + bass * 0.01) * audioBlend;
+        driftZ +=
+          Math.cos(elapsed * 1.0 + phase) * (0.01 + mid * 0.015) * audioBlend;
+        driftY += bass * 0.02 * audioBlend;
+      }
+      if (flowProfile !== 'DEEP_BLUE') {
+        const liftBlend = 0.7 + 0.3 * audioBlend;
+        driftY += randomLift * liftBlend;
+      }
+      if (flowProfile !== 'DEEP_BLUE') {
+        const idleBaseScale = flowProfile === 'STRONG' ? 1.15 : 1.0;
+        driftX += Math.sin(elapsed * 0.16 + phase * 0.7) * 0.0025 * idleBaseScale;
+        driftZ += Math.cos(elapsed * 0.14 + phase * 0.5) * 0.0022 * idleBaseScale;
+      }
+      if (flowProfile === 'DEEP_BLUE') {
+        driftX += Math.sin(elapsed * 0.12 + phase) * 0.0025;
+        driftY += Math.cos(elapsed * 0.16 + phase * 0.6) * 0.003;
+        driftZ += Math.sin(elapsed * 0.14 + phase * 0.8) * 0.0022;
+        driftY += Math.sin(elapsed * 0.55 + phase * 0.7) * 0.004 * deepAudioBlend;
+        driftX += bass * 0.004 * deepAudioBlend;
+        driftZ += mid * 0.003 * deepAudioBlend;
+      }
+
+      // positions blended intro -> normal (fade additive)
+      const introFade = 1 - introT;
+      const finalX = baseX + driftX + introOffset * introFade;
+      const finalY =
+        baseY +
+        driftY +
+        bassPulse * 0.6 +
+        (introLift + introOffset + basePulse * 0.4) * introFade;
+      const finalZ = baseZ + driftZ + introOffset * introFade;
+      TEMP_VECTOR.set(finalX, finalY, finalZ);
+
+      // rotation components
+      const introRotationX = introTwist + phase * 0.01;
+      const introRotationY = introTwist * 0.65 + phase * 0.008;
+
+      let normalRotationX =
+        elapsed * rotSpeedBaseX * hoverRotDamp + phase * 0.02 + hover * (Math.PI * 2);
+      let normalRotationY = elapsed * rotSpeedBaseY * hoverRotDamp + phase * 0.015;
+      let normalRotationZ =
+        normalRotationX * 0.9 * axisVariance[i3 + 2] +
+        Math.sin(elapsed * 0.9 + phase * 1.4) * (0.015 + high * 0.025);
+
+      normalRotationY += Math.sin(elapsed * 0.42 + phase * 0.25) * (0.03 + bass * 0.03);
+      normalRotationY += mid * 0.08;
+      normalRotationX += high * 0.05;
+      normalRotationZ += Math.sin(elapsed * 1.5 + phase) * (0.01 + high * 0.03);
+
+      const idleRotY = Math.sin(elapsed * 0.4 + phase) * 0.04;
+      const audioRotY = Math.sin(elapsed * 1.2 + phase) * (0.05 + mid * 0.08);
+      normalRotationY += THREE.MathUtils.lerp(idleRotY, audioRotY, audioBlend);
+
+      let rotationX = THREE.MathUtils.lerp(introRotationX, normalRotationX, introT);
+      let rotationY = THREE.MathUtils.lerp(introRotationY, normalRotationY, introT);
+      let rotationZ = normalRotationZ;
+
+      if (flowProfile === 'DEEP_BLUE') {
+        rotationY += Math.sin(elapsed * 0.75 + phase) * 0.02 * deepAudioBlend;
+        rotationX += Math.cos(elapsed * 0.6 + phase * 0.4) * 0.012 * deepAudioBlend;
+        rotationZ += Math.sin(elapsed * 1.1 + phase * 0.9) * 0.008 * deepAudioBlend;
+      }
+
+      const pulseAmount = THREE.MathUtils.lerp(0.08, 1, audioBlend);
+      const pulseBlend = introT;
+      if (flowProfile !== 'DEEP_BLUE') {
+        rotationY += randomPulse * 2.2 * pulseAmount * pulseBlend + basePulse * 0.12 * (1 - introT);
+        rotationX += randomPulse * 1.6 * pulseAmount * pulseBlend + basePulse * 0.08 * (1 - introT);
+      } else {
+        rotationY += Math.sin(elapsed * 0.22 + phase) * 0.012;
+        rotationX += Math.cos(elapsed * 0.18 + phase * 0.5) * 0.008;
+        rotationY += Math.sin(elapsed * 0.7 + phase * 0.8) * 0.014 * deepAudioBlend;
+        rotationX += Math.cos(elapsed * 0.5 + phase * 0.6) * 0.009 * deepAudioBlend;
+      }
+
+      TEMP_EULER.set(rotationX, rotationY * 1.2 * axisVariance[i3 + 1], rotationZ);
       TEMP_QUATERNION.setFromEuler(TEMP_EULER);
-      TEMP_SCALE.setScalar(scaleFactors[i] * (1 + hover * 0.00375));
+
+      // scale: blend intro -> normal
+      const introScaleMul = 1 + Math.sin(elapsed * 1.2 + phase * 0.2) * 0.018;
+      let normalScaleMul = 1;
+      if (flowProfile === 'DEEP_BLUE') {
+        normalScaleMul += Math.sin(elapsed * 0.55 + phase * 0.3) * 0.004;
+        normalScaleMul += bass * 0.003 * deepAudioBlend;
+      } else if (audioActive) {
+        normalScaleMul += randomPulse * 0.35 + smoothBass * 0.006;
+      }
+      const finalScale = scaleFactors[i] * THREE.MathUtils.lerp(introScaleMul, normalScaleMul, introT);
+
+      TEMP_SCALE.setScalar(finalScale);
+
       TEMP_MATRIX.compose(TEMP_VECTOR, TEMP_QUATERNION, TEMP_SCALE);
       mesh.setMatrixAt(i, TEMP_MATRIX);
     }
+
     mesh.instanceMatrix.needsUpdate = true;
   };
 
@@ -356,6 +509,9 @@ export function createTorusCluster(
     setHoverIndex,
     setGeometryDetail,
     setLayout,
+    skipIntro() {
+      introTime = INTRO_DURATION;
+    },
     dispose() {
       scene.remove(mesh);
       geometry.dispose();

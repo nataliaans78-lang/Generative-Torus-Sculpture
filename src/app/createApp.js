@@ -259,6 +259,13 @@ export function createApp() {
     audio.setFile(AUDIO_SETTINGS.url, false, false, initialAudioPlaybackState.positionSeconds);
   }
 
+  let hasInteracted = false;
+  const markInteracted = () => {
+    if (hasInteracted) return;
+    hasInteracted = true;
+    flow.setHasInteracted?.(true);
+  };
+
   const flow = createFlowMode({
     scene,
     lights,
@@ -426,6 +433,7 @@ export function createApp() {
     'spotFocus',
     'flowAngle',
     'lightMotionSpeed',
+    'audioReactiveScale',
   ];
   const sanitizeLightingOverride = (lighting = {}) => {
     const next = {};
@@ -521,19 +529,25 @@ export function createApp() {
   };
 
   const applyLightingState = () => {
-    applyLightingPresetToLights(controlsState.state.lighting);
-    flow.setBaseLightIntensities({
-      keyIntensity: controlsState.state.lighting.keyIntensity,
-      rimIntensity: controlsState.state.lighting.rimIntensity,
+    const effectiveLighting = {
+      ...controlsState.state.lighting,
       fillIntensity: controlsState.state.lighting.fillIntensity,
       centerIntensity: controlsState.state.lighting.centerIntensity,
+    };
+    applyLightingPresetToLights(effectiveLighting);
+    flow.setBaseLightIntensities({
+      keyIntensity: effectiveLighting.keyIntensity,
+      rimIntensity: effectiveLighting.rimIntensity,
+      fillIntensity: effectiveLighting.fillIntensity,
+      centerIntensity: effectiveLighting.centerIntensity,
     });
     flow.setOptions({
-      dotIntensity: controlsState.state.lighting.spotIntensity,
-      pulseIntensity: controlsState.state.lighting.flowPulseIntensity,
-      dotSize: controlsState.state.lighting.spotFocus,
-      flowAngle: controlsState.state.lighting.flowAngle,
-      flowSpeed: controlsState.state.lighting.lightMotionSpeed,
+      dotIntensity: effectiveLighting.spotIntensity,
+      pulseIntensity: effectiveLighting.flowPulseIntensity,
+      dotSize: effectiveLighting.spotFocus,
+      flowAngle: effectiveLighting.flowAngle,
+      flowSpeed: effectiveLighting.lightMotionSpeed,
+      audioReactiveScale: effectiveLighting.audioReactiveScale,
     });
   };
 
@@ -574,9 +588,11 @@ export function createApp() {
       sharedMaterial: torusResources.material,
       sharedStripeTexture: torusResources.stripeTexture,
     });
+    if (audio?.isPlaying()) {
+      torusCluster.skipIntro?.();
+    }
   };
   applyQualityLevel(controlsState.state.quality);
-  rebuildMeshes();
 
   const updateFlowBounds = () => {
     const halfX = layoutState.nx * layoutState.spacing * 0.5;
@@ -605,10 +621,11 @@ export function createApp() {
         fillIntensity: preset.lighting.fillIntensity ?? 0,
         centerIntensity: preset.lighting.centerIntensity ?? (key === 'DEEP_BLUE' ? 10 : 0),
         spotIntensity: preset.lighting.flowSpotIntensity,
-        flowPulseIntensity: preset.lighting.flowPulseIntensity,
-        spotFocus: preset.lighting.spotFocus,
-        flowAngle: preset.lighting.flowAngle,
-        lightMotionSpeed: preset.lighting.flowSpeed,
+      flowPulseIntensity: preset.lighting.flowPulseIntensity,
+      spotFocus: preset.lighting.spotFocus,
+      flowAngle: preset.lighting.flowAngle,
+      lightMotionSpeed: preset.lighting.flowSpeed,
+      audioReactiveScale: controlsState.state.lighting.audioReactiveScale ?? 1,
       },
       scene: {
         gridCount: clampGridCount(presetGridCount, layoutProfile),
@@ -661,7 +678,7 @@ export function createApp() {
     }
     flow.setProfile(getFlowProfileFromPreset(key));
     flow.setEnabled(controlsState.state.flowEnabled);
-    lights.setDeepBlueAccentsEnabled?.(isDeepBlue);
+    lights.setFlowAccents?.(key);
     applyLightingState();
     applyAdaptivePixelRatio();
 
@@ -738,6 +755,7 @@ export function createApp() {
     initialQuality: controlsState.state.quality,
     onPresetChange: (key) => handlePresetChange(key),
     onLightingChange: (partial) => {
+      markInteracted();
       controlsState.setLighting(partial);
       applyLightingState();
       ui.setLightingValues(controlsState.state.lighting);
@@ -745,12 +763,14 @@ export function createApp() {
       writeStoredState();
     },
     onSceneChange: (partial) => {
+      markInteracted();
       layoutUpdate(partial);
       ui.setSceneValues(controlsState.state.scene);
       storeCurrentPresetOverride();
       writeStoredState();
     },
     onQualityChange: (level) => {
+      markInteracted();
       applyQualityLevel(level);
       controlsState.setQuality(level);
       storedState.quality = level;
@@ -758,6 +778,7 @@ export function createApp() {
       writeStoredState();
     },
     onPlayToggle: () => {
+      markInteracted();
       if (!audio) return false;
       if (audio.audio.isPlaying || audio.hasPendingPlay()) {
         audio.pause();
@@ -771,6 +792,7 @@ export function createApp() {
       return started;
     },
     onUploadAudio: async (file) => {
+      markInteracted();
       if (!audio || !file) return;
       const objectUrl = URL.createObjectURL(file);
       ui.setPlayState(false);
@@ -781,6 +803,7 @@ export function createApp() {
     },
     onResetAll: async () => {
       STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
+      markInteracted();
       if (audio) {
         audio.pause();
         await audio.setFile(AUDIO_SETTINGS.url, false, false);
@@ -818,10 +841,24 @@ export function createApp() {
   ui?.setLightingValues(controlsState.state.lighting);
   ui?.setSceneValues(controlsState.state.scene);
   ui.setQuality(controlsState.state.quality);
+  flow.setHasInteracted(false);
 
   const clock = new THREE.Clock();
   let lastAudioStatePersistAt = 0;
   let lastDeviceModeMobile = isMobileDevice();
+  const endIntroMode = () => {
+    if (hasInteracted) return;
+    hasInteracted = true;
+    flow.setHasInteracted(true);
+  };
+  const introExitHandler = () => {
+    endIntroMode();
+    window.removeEventListener('pointerdown', introExitHandler);
+    window.removeEventListener('keydown', introExitHandler);
+  };
+  window.addEventListener('pointerdown', introExitHandler, { passive: true });
+  window.addEventListener('keydown', introExitHandler, { passive: true });
+  setTimeout(endIntroMode, 6000);
   const applyModeDefaults = (isMobile) => {
     const targetPreset = defaultPresetKey;
     const desiredQuality = isMobile
@@ -841,10 +878,29 @@ export function createApp() {
   };
   const cameraDrift = new THREE.Vector3();
   const previousCameraDrift = new THREE.Vector3();
+  let startupBlend = 0;
+
   const animate = () => {
-    const deltaTime = clock.getDelta();
+    const deltaTime = Math.min(clock.getDelta(), 0.05); // clamp to avoid huge jumps after tab idle
     const elapsed = clock.getElapsedTime();
+    startupBlend = Math.min(startupBlend + deltaTime / 0.9, 1);
     const reactive = flow.update(deltaTime);
+    const introPhase = reactive?.introPhase ?? (hasInteracted ? 0 : 1);
+    if (controlsState.state.flowEnabled) {
+      lights.setFlowAccents?.(controlsState.state.presetKey, introPhase);
+    }
+    // Intro boosts for fill/center per frame
+    const fillBoost = 1 + introPhase * 0.2;
+    const centerBoost = 1 + introPhase * 0.35;
+    if (lights?.fillLight) {
+      lights.fillLight.intensity =
+        (controlsState.state.lighting.fillIntensity ?? lights.fillLight.intensity) * fillBoost;
+    }
+    if (lights?.centerLight) {
+      lights.centerLight.intensity =
+        (controlsState.state.lighting.centerIntensity ?? lights.centerLight.intensity) *
+        centerBoost;
+    }
     if (isHoverPointerActive && torusCluster?.mesh) {
       raycaster.setFromCamera(hoverPointer, camera);
       const intersections = raycaster.intersectObject(torusCluster.mesh, false);
@@ -857,7 +913,12 @@ export function createApp() {
     torusCluster.update(deltaTime, reactive);
     torusCluster.mesh.rotation.y +=
       layoutState.rotationSpeed * GLOBAL_ROTATION_SCALE * deltaTime + touchSpinVelocity;
-    cameraDrift.set(Math.sin(elapsed * 0.08) * 0.2, Math.cos(elapsed * 0.06) * 0.15, 0);
+    // gentle camera drift for slight parallax
+    cameraDrift.set(
+      Math.sin(elapsed * 0.045) * 0.12,
+      Math.cos(elapsed * 0.035) * 0.09,
+      Math.sin(elapsed * 0.025) * 0.05,
+    );
     cameraDrift.sub(previousCameraDrift);
     camera.position.add(cameraDrift);
     controls.target.add(cameraDrift);
@@ -867,10 +928,27 @@ export function createApp() {
     if (Math.abs(touchSpinVelocity) < 0.00005) {
       touchSpinVelocity = 0;
     }
-    const exposure = controlsState.state.flowEnabled
-      ? THREE.MathUtils.clamp(1.0 + (reactive?.mid ?? 0) * 0.6, 0.95, 1.25)
+    const audioActive = Boolean(reactive?.audioActive);
+    const exposureBase = controlsState.state.flowEnabled
+      ? audioActive
+        ? 0.97
+        : 1.0
       : 1.08;
-    renderer.toneMappingExposure = exposure;
+    const exposureScale = controlsState.state.flowEnabled
+      ? audioActive
+        ? 0.35
+        : 0.6
+      : 0;
+    const exposure = controlsState.state.flowEnabled
+      ? THREE.MathUtils.clamp(
+          exposureBase + (reactive?.mid ?? 0) * exposureScale,
+          audioActive ? 0.92 : 0.95,
+          audioActive ? 1.08 : 1.25,
+        )
+      : exposureBase;
+    const deepBoost =
+      controlsState.state.presetKey === 'DEEP_BLUE' ? 1.05 : 1;
+    renderer.toneMappingExposure = THREE.MathUtils.lerp(0.92, exposure * deepBoost, startupBlend);
     postprocessing.update(elapsed, reactive);
     controls.update();
     postprocessing.render();
