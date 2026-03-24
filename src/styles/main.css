@@ -119,7 +119,9 @@ canvas {
   flex-direction: column;
   gap: 12px;
   overflow: hidden;
-  transform: none;
+  --panel-x: 0;
+  --panel-y: 0;
+  transform: translate(var(--panel-x), var(--panel-y));
   transform-origin: top center;
   transition:
     max-height 0.28s ease,
