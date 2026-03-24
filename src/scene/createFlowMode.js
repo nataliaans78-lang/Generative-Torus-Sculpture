@@ -198,6 +198,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     qualityLevel: 'HIGH',
     activeSpotCount: SPOT_COUNT,
     activeWallSpotCount: WALL_SPOT_COUNT,
+    wallSpotCountOverride: null,
     audioActive: false,
     audioReactiveScale: 1,
     hasInteracted: false,
@@ -280,7 +281,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
       const s = roomState.radius * wallSpotScales[i] * 0.82;
       wallSpots[i].scale.set(s, s, 1);
     }
-    const violetWeight = state.flowProfile === 'DEEP_BLUE' ? 0.08 : state.flowProfile === 'STRONG' ? 0.8 : 0.45;
+    const violetWeight = state.flowProfile === 'DEEP_BLUE' ? 0.0 : state.flowProfile === 'STRONG' ? 0.8 : 0.45;
     const accentTarget = new THREE.Color().lerpColors(
       FLOW_ACCENT_BLUE,
       FLOW_ACCENT_VIOLET,
@@ -313,6 +314,13 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     return THREE.MathUtils.clamp(budget, 0, SPOT_COUNT);
   };
   const resolveWallSpotBudget = () => {
+    if (typeof state.wallSpotCountOverride === 'number') {
+      return THREE.MathUtils.clamp(
+        Math.floor(state.wallSpotCountOverride),
+        0,
+        WALL_SPOT_COUNT,
+      );
+    }
     const isMobileViewport = window.matchMedia('(max-width: 768px)').matches;
     if (!isMobileViewport || state.qualityLevel !== 'HIGH') {
       return WALL_SPOT_COUNT;
@@ -621,6 +629,10 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     }
     if (typeof options.dotSize === 'number') {
       state.dotSize = options.dotSize;
+    }
+    if (typeof options.wallSpotCount === 'number') {
+      state.wallSpotCountOverride = options.wallSpotCount;
+      applyWallSpotBudget();
     }
     if (typeof options.audioReactiveScale === 'number') {
       state.audioReactiveScale = THREE.MathUtils.clamp(

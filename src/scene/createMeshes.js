@@ -311,7 +311,6 @@ export function createTorusCluster(
       const baseY = basePositions[i3 + 1] + baseOffsets[i3 + 1];
       const baseZ = basePositions[i3 + 2] + baseOffsets[i3 + 2];
       const phase = phases[i];
-
       // intro motion (clean, shared)
       const introOffset = Math.sin(elapsed * 0.8 + phase * 0.35) * 0.006;
       const introLift = Math.sin(elapsed * 0.9) * 0.012;
@@ -350,14 +349,14 @@ export function createTorusCluster(
       driftZ += Math.cos(elapsed * 0.35 + phase) * 0.01 * idleDriftBlend;
       if (audioBlend > 0 && flowProfile !== 'DEEP_BLUE') {
         driftX +=
-          Math.sin(elapsed * 0.9 + phase * 1.3) * (0.01 + bass * 0.01) * audioBlend;
+          Math.sin(elapsed * 0.9 + phase * 1.3) * (0.006 + bass * 0.006) * audioBlend;
         driftZ +=
-          Math.cos(elapsed * 1.0 + phase) * (0.01 + mid * 0.015) * audioBlend;
-        driftY += bass * 0.02 * audioBlend;
+          Math.cos(elapsed * 1.0 + phase) * (0.006 + mid * 0.01) * audioBlend;
+        driftY += bass * 0.01 * audioBlend;
       }
       if (flowProfile !== 'DEEP_BLUE') {
-        const liftBlend = 0.7 + 0.3 * audioBlend;
-        driftY += randomLift * liftBlend;
+        const liftBlend = 0.5 + 0.25 * audioBlend;
+        driftY += randomLift * liftBlend * 0.6;
       }
       driftX += hoverDriftX;
       driftY += hoverDriftY;

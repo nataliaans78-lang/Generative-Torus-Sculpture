@@ -216,6 +216,16 @@ export function createApp() {
   window.addEventListener('pointerleave', handlePointerLeave, { passive: true });
 
   const lights = createLights(scene, LIGHT_SETTINGS);
+  // expose for quick inspection in DevTools (window.__deepWalls / window.__scene)
+  if (typeof window !== 'undefined') {
+    window.__scene = scene;
+    window.__deepWalls = {
+      left: lights.deepWallLeft,
+      right: lights.deepWallRight,
+      leftTarget: lights.deepWallLeftTarget,
+      rightTarget: lights.deepWallRightTarget,
+    };
+  }
   const audio = createFileAudio({
     listener: new THREE.AudioListener(),
     url: AUDIO_SETTINGS.url,
@@ -624,6 +634,38 @@ export function createApp() {
     writeStoredState();
     return true;
   };
+
+  // Force gridCount to 2 (or layout min) for low-FPS fallback on any preset
+  const forceGridCountToTwo = () => {
+    const layoutProfile = getLayoutProfile(controlsState.state.presetKey);
+    const target = Math.max(layoutProfile.gridMin, 2);
+    const current = controlsState.state.scene.gridCount ?? layoutProfile.gridDefault;
+    if (current === target) return false;
+    controlsState.setScene({ gridCount: target });
+    layoutState.gridCount = target;
+    const dims = resolvedGridDimensions(target, layoutProfile);
+    layoutState.nx = dims.nx;
+    layoutState.ny = dims.ny;
+    layoutState.nz = dims.nz;
+    const previousCount = torusCluster ? torusCluster.mesh.count : 0;
+    const nextCount = layoutState.nx * layoutState.ny * layoutState.nz;
+    const countChanged = previousCount !== nextCount;
+    if (!torusCluster || countChanged) {
+      rebuildMeshes();
+    } else {
+      torusCluster.setLayout({
+        nx: layoutState.nx,
+        ny: layoutState.ny,
+        nz: layoutState.nz,
+        spacing: layoutState.spacing,
+      });
+    }
+    updateFlowBounds();
+    storeCurrentPresetOverride();
+    ui?.setSceneValues(controlsState.state.scene);
+    writeStoredState();
+    return true;
+  };
   applyQualityLevel(controlsState.state.quality);
 
   const updateFlowBounds = () => {
@@ -709,7 +751,17 @@ export function createApp() {
       scene.background = cachedBgColor;
     }
     flow.setProfile(getFlowProfileFromPreset(key));
-    flow.setEnabled(controlsState.state.flowEnabled);
+    // Deep Blue: bez flow / wall spotów z systemu flow
+    if (isDeepBlue) {
+      flow.setEnabled(false);
+      flow.setOptions({ wallSpotCount: null });
+    } else {
+      flow.setEnabled(controlsState.state.flowEnabled);
+      flow.setOptions({
+        wallSpotCount: null,
+        audioReactiveScale: controlsState.state.lighting.audioReactiveScale,
+      });
+    }
     lights.setFlowAccents?.(key);
     applyLightingState();
     applyAdaptivePixelRatio();
@@ -942,7 +994,7 @@ export function createApp() {
     }
     // if already at lowest quality and nadal wolno, próbuj zmniejszyć grid
     if (avgFps < FPS_DROP && idx === qualityOrder.length - 1) {
-      const reduced = autoReduceGridCount();
+      const reduced = forceGridCountToTwo() || autoReduceGridCount();
       if (reduced) {
         autoDropped = true;
       }
@@ -1003,6 +1055,9 @@ export function createApp() {
     torusCluster.mesh.rotation.y +=
       layoutState.rotationSpeed * GLOBAL_ROTATION_SCALE * deltaTime + touchSpinVelocity;
     const isDeep = controlsState.state.presetKey === 'DEEP_BLUE';
+    if (isDeep) {
+      lights.tickDeepWallSpots?.(elapsed);
+    }
     const targetMouseX = isDeep ? 0 : hoverPointer.x * 0.24;
     const targetMouseY = isDeep ? 0 : hoverPointer.y * 0.18;
     targetMouseOffset.set(targetMouseX, targetMouseY, 0);

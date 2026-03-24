@@ -364,6 +364,10 @@ export function createSceneControls({
     } else {
       drawer.style.maxHeight = '';
       drawer.scrollTop = 0;
+      // desktop: wróć do domyślnego rozwinięcia sekcji po ponownym otwarciu panelu
+      if (!isMobile()) {
+        sections.forEach((section) => setSectionCollapsed(section, false));
+      }
       setQualityMenuOpen(!sectionQuality.collapsed);
     }
     drawer.scrollTop = 0;
