@@ -259,13 +259,6 @@ export function createApp() {
     audio.setFile(AUDIO_SETTINGS.url, false, false, initialAudioPlaybackState.positionSeconds);
   }
 
-  let hasInteracted = false;
-  const markInteracted = () => {
-    if (hasInteracted) return;
-    hasInteracted = true;
-    flow.setHasInteracted?.(true);
-  };
-
   const flow = createFlowMode({
     scene,
     lights,
@@ -273,6 +266,13 @@ export function createApp() {
     isPlaying: () => audio?.isPlaying(),
   });
   flow.setEnabled(false);
+
+  let hasInteracted = false;
+  const markInteracted = () => {
+    if (hasInteracted) return;
+    hasInteracted = true;
+    flow.setHasInteracted?.(true);
+  };
 
   const controlsState = createControlState();
   const defaultPresetKey = 'DEEP_BLUE';
@@ -592,6 +592,38 @@ export function createApp() {
       torusCluster.skipIntro?.();
     }
   };
+
+  const autoReduceGridCount = () => {
+    const layoutProfile = getLayoutProfile(controlsState.state.presetKey);
+    const current = controlsState.state.scene.gridCount ?? layoutProfile.gridDefault;
+    const min = layoutProfile.gridMin;
+    if (current <= min) return false;
+    const next = current - 1;
+    controlsState.setScene({ gridCount: next });
+    layoutState.gridCount = next;
+    const dims = resolvedGridDimensions(next, layoutProfile);
+    layoutState.nx = dims.nx;
+    layoutState.ny = dims.ny;
+    layoutState.nz = dims.nz;
+    const previousCount = torusCluster ? torusCluster.mesh.count : 0;
+    const nextCount = layoutState.nx * layoutState.ny * layoutState.nz;
+    const countChanged = previousCount !== nextCount;
+    if (!torusCluster || countChanged) {
+      rebuildMeshes();
+    } else {
+      torusCluster.setLayout({
+        nx: layoutState.nx,
+        ny: layoutState.ny,
+        nz: layoutState.nz,
+        spacing: layoutState.spacing,
+      });
+    }
+    updateFlowBounds();
+    storeCurrentPresetOverride();
+    ui?.setSceneValues(controlsState.state.scene);
+    writeStoredState();
+    return true;
+  };
   applyQualityLevel(controlsState.state.quality);
 
   const updateFlowBounds = () => {
@@ -878,12 +910,69 @@ export function createApp() {
   };
   const cameraDrift = new THREE.Vector3();
   const previousCameraDrift = new THREE.Vector3();
+  const mouseOffset = new THREE.Vector3();
+  const targetMouseOffset = new THREE.Vector3();
   let startupBlend = 0;
+  // FPS watchdog (auto quality adjust with hysteresis)
+  let fpsSum = 0;
+  let fpsCount = 0;
+  let lastFpsCheck = 0;
+  let autoDropped = false;
+  const qualityOrder = [QUALITY_LEVELS.HIGH, QUALITY_LEVELS.MEDIUM, QUALITY_LEVELS.LOW];
+  const FPS_DROP = 40;
+  const FPS_RECOVER = 58;
+
+  const setQualityAndPersist = (level) => {
+    applyQualityLevel(level);
+    controlsState.setQuality(level);
+    storedState.quality = level;
+    ui.setQuality(level);
+    writeStoredState();
+  };
+
+  const maybeAutoAdjustQuality = (avgFps) => {
+    const current = controlsState.state.quality || QUALITY_LEVELS.HIGH;
+    const idx = qualityOrder.indexOf(current);
+    // drop quality if low FPS
+    if (avgFps < FPS_DROP && idx < qualityOrder.length - 1) {
+      const next = qualityOrder[idx + 1];
+      setQualityAndPersist(next);
+      autoDropped = true;
+      return;
+    }
+    // if already at lowest quality and nadal wolno, próbuj zmniejszyć grid
+    if (avgFps < FPS_DROP && idx === qualityOrder.length - 1) {
+      const reduced = autoReduceGridCount();
+      if (reduced) {
+        autoDropped = true;
+      }
+    }
+    // recover one level if FPS healthy and previously dropped
+    if (autoDropped && avgFps > FPS_RECOVER && idx > 0) {
+      const prev = qualityOrder[idx - 1];
+      setQualityAndPersist(prev);
+      if (prev === QUALITY_LEVELS.HIGH) {
+        autoDropped = false;
+      }
+    }
+  };
 
   const animate = () => {
     const deltaTime = Math.min(clock.getDelta(), 0.05); // clamp to avoid huge jumps after tab idle
     const elapsed = clock.getElapsedTime();
     startupBlend = Math.min(startupBlend + deltaTime / 0.9, 1);
+    // FPS sampling
+    if (deltaTime > 0) {
+      fpsSum += 1 / deltaTime;
+      fpsCount += 1;
+    }
+    if (elapsed - lastFpsCheck > 3 && fpsCount > 0) {
+      const avgFps = fpsSum / fpsCount;
+      maybeAutoAdjustQuality(avgFps);
+      fpsSum = 0;
+      fpsCount = 0;
+      lastFpsCheck = elapsed;
+    }
     const reactive = flow.update(deltaTime);
     const introPhase = reactive?.introPhase ?? (hasInteracted ? 0 : 1);
     if (controlsState.state.flowEnabled) {
@@ -913,15 +1002,30 @@ export function createApp() {
     torusCluster.update(deltaTime, reactive);
     torusCluster.mesh.rotation.y +=
       layoutState.rotationSpeed * GLOBAL_ROTATION_SCALE * deltaTime + touchSpinVelocity;
-    // gentle camera drift for slight parallax
+    const isDeep = controlsState.state.presetKey === 'DEEP_BLUE';
+    const targetMouseX = isDeep ? 0 : hoverPointer.x * 0.24;
+    const targetMouseY = isDeep ? 0 : hoverPointer.y * 0.18;
+    targetMouseOffset.set(targetMouseX, targetMouseY, 0);
+    mouseOffset.lerp(targetMouseOffset, 0.02);
+    // subtle camera drift + tiny parallax (disabled for Deep)
     cameraDrift.set(
-      Math.sin(elapsed * 0.045) * 0.12,
-      Math.cos(elapsed * 0.035) * 0.09,
-      Math.sin(elapsed * 0.025) * 0.05,
+      Math.sin(elapsed * 0.045) * 0.06 + mouseOffset.x,
+      Math.cos(elapsed * 0.035) * 0.045 + mouseOffset.y,
+      Math.sin(elapsed * 0.025) * 0.03,
     );
     cameraDrift.sub(previousCameraDrift);
     camera.position.add(cameraDrift);
     controls.target.add(cameraDrift);
+    // micro parallax on torus cluster (not for Deep)
+    if (torusCluster?.mesh) {
+      if (isDeep) {
+        torusCluster.mesh.position.x = 0;
+        torusCluster.mesh.position.y = 0;
+      } else {
+        torusCluster.mesh.position.x = mouseOffset.x * 0.0012;
+        torusCluster.mesh.position.y = mouseOffset.y * 0.0009;
+      }
+    }
     previousCameraDrift.add(cameraDrift);
     const touchDecay = Math.pow(0.9, deltaTime * 60);
     touchSpinVelocity *= touchDecay;
@@ -984,30 +1088,6 @@ export function createApp() {
     renderer.setSize(sizes.width, sizes.height);
     postprocessing.setSize(sizes.width, sizes.height);
   });
-
-  window.__debugDumpSettings = () => {
-    const storage = {};
-    STORAGE_KEYS.forEach((key) => {
-      storage[key] = window.localStorage.getItem(key);
-    });
-    return {
-      storage,
-      runtime: {
-        preset: controlsState.state.presetKey,
-        quality: controlsState.state.quality,
-        lighting: { ...controlsState.state.lighting },
-        scene: { ...controlsState.state.scene },
-      },
-      persisted: {
-        preset: storedState.preset,
-        quality: storedState.quality,
-        overrides: JSON.parse(JSON.stringify(storedState.overrides ?? {})),
-      },
-    };
-  };
-  window.__debugClearSettings = () => {
-    STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
-  };
 
   return { scene, camera, renderer, controls };
 }

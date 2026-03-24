@@ -299,6 +299,13 @@ export function createTorusCluster(
       hoverWeights[i] = THREE.MathUtils.lerp(hoverWeights[i], hoverTarget, hoverLerp);
       const hover = hoverWeights[i];
       const hoverRotDamp = 1 - hover * 0.45;
+      const hoverBase =
+        flowProfile === 'DEEP_BLUE'
+          ? 0.35
+          : audioActive
+            ? 0.6
+            : 1.4;
+      const hoverAmount = hover * hoverBase;
 
       const baseX = basePositions[i3] + baseOffsets[i3];
       const baseY = basePositions[i3 + 1] + baseOffsets[i3 + 1];
@@ -312,11 +319,11 @@ export function createTorusCluster(
       const introScale = 1 + Math.sin(elapsed * 1.1) * 0.018;
 
       const randomPulse =
-        Math.sin(elapsed * (0.9 + phase * 0.12) + phase * 3.1) * (0.004 + smoothAvg * 0.01);
+        Math.sin(elapsed * (0.9 + phase * 0.12) + phase * 3.1) * (0.004 + avg * 0.01);
       const randomLift =
-        Math.cos(elapsed * (0.7 + phase * 0.08) + phase * 2.4) * (0.006 + smoothBass * 0.012);
+        Math.cos(elapsed * (0.7 + phase * 0.08) + phase * 2.4) * (0.006 + bass * 0.012);
       const basePulse =
-        Math.sin(elapsed * (0.85 + phase * 0.05) + phase * 2.1) * (0.008 + smoothAvg * 0.01);
+        Math.sin(elapsed * (0.85 + phase * 0.05) + phase * 2.1) * (0.008 + avg * 0.01);
 
     const bassPulseBlend = flowProfile === 'DEEP_BLUE' ? deepAudioBlend : audioBlend;
     const bassPulse = Math.sin(elapsed * 2.2 + phase * 1.3) * pulseScaleAmp * bassPulseBlend;
@@ -324,15 +331,18 @@ export function createTorusCluster(
       // base drift
       let driftX =
         Math.sin(elapsed * 0.22 + phase) * driftXAmp +
-        Math.sin(elapsed * 0.95 + phase * 1.1) * smoothMid * 0.01;
+        Math.sin(elapsed * 0.95 + phase * 1.1) * mid * 0.01;
       let driftY =
         Math.sin(elapsed * 0.5 + phase * 0.7) * driftYAmp +
         Math.sin(elapsed * 1.2 + phase) * liftBase +
-        hover * 0.003;
+        hoverAmount * 0.01;
       let driftZ =
         Math.cos(elapsed * 0.26 + phase * 1.1) * driftZAmp +
         Math.cos(elapsed * 0.82 + phase * 0.9) * depthSwayAmp;
       driftZ += Math.sin(elapsed * 0.3 + phase) * 0.02;
+      const hoverDriftX = Math.sin(elapsed * 1.4 + phase) * 0.016 * hoverAmount;
+      const hoverDriftY = 0.026 * hoverAmount;
+      const hoverDriftZ = Math.cos(elapsed * 1.1 + phase * 0.7) * 0.012 * hoverAmount;
 
       // idle / audio extra drift
       const idleDriftBlend = introT * (audioActive ? 0 : 1);
@@ -349,6 +359,9 @@ export function createTorusCluster(
         const liftBlend = 0.7 + 0.3 * audioBlend;
         driftY += randomLift * liftBlend;
       }
+      driftX += hoverDriftX;
+      driftY += hoverDriftY;
+      driftZ += hoverDriftZ;
       if (flowProfile !== 'DEEP_BLUE') {
         const idleBaseScale = flowProfile === 'STRONG' ? 1.15 : 1.0;
         driftX += Math.sin(elapsed * 0.16 + phase * 0.7) * 0.0025 * idleBaseScale;
@@ -378,8 +391,7 @@ export function createTorusCluster(
       const introRotationX = introTwist + phase * 0.01;
       const introRotationY = introTwist * 0.65 + phase * 0.008;
 
-      let normalRotationX =
-        elapsed * rotSpeedBaseX * hoverRotDamp + phase * 0.02 + hover * (Math.PI * 2);
+      let normalRotationX = elapsed * rotSpeedBaseX * hoverRotDamp + phase * 0.02;
       let normalRotationY = elapsed * rotSpeedBaseY * hoverRotDamp + phase * 0.015;
       let normalRotationZ =
         normalRotationX * 0.9 * axisVariance[i3 + 2] +
@@ -397,6 +409,8 @@ export function createTorusCluster(
       let rotationX = THREE.MathUtils.lerp(introRotationX, normalRotationX, introT);
       let rotationY = THREE.MathUtils.lerp(introRotationY, normalRotationY, introT);
       let rotationZ = normalRotationZ;
+      rotationX += 0.17 * hoverAmount;
+      rotationY += Math.sin(elapsed * 0.9 + phase) * 0.12 * hoverAmount + hoverAmount * 0.26;
 
       if (flowProfile === 'DEEP_BLUE') {
         rotationY += Math.sin(elapsed * 0.75 + phase) * 0.02 * deepAudioBlend;
@@ -426,9 +440,10 @@ export function createTorusCluster(
         normalScaleMul += Math.sin(elapsed * 0.55 + phase * 0.3) * 0.004;
         normalScaleMul += bass * 0.003 * deepAudioBlend;
       } else if (audioActive) {
-        normalScaleMul += randomPulse * 0.35 + smoothBass * 0.006;
+        normalScaleMul += randomPulse * 0.35 + bass * 0.006;
       }
-      const finalScale = scaleFactors[i] * THREE.MathUtils.lerp(introScaleMul, normalScaleMul, introT);
+      let finalScale = scaleFactors[i] * THREE.MathUtils.lerp(introScaleMul, normalScaleMul, introT);
+      finalScale *= 1 + hoverAmount * 0.065;
 
       TEMP_SCALE.setScalar(finalScale);
 
