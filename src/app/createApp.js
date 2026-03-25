@@ -26,6 +26,7 @@ import {
   UI_STATE_STORAGE_KEY,
   STORAGE_KEYS,
 } from '../config/index.js';
+import { buildRuntimeConfig, getDeviceProfile } from '../config/runtimeConfig.js';
 
 const isMobileDevice = () =>
   /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
@@ -45,15 +46,15 @@ const getPresetQuality = (presetKey = 'DEEP_BLUE') => {
 const GLOBAL_ROTATION_SCALE = 0.7;
 const MOBILE_LAYOUT_PROFILE = Object.freeze({
   gridMin: 1,
-  gridDefault: 2,
+  gridDefault: 1,
   gridMax: 3,
-  torusScale: 0.8,
+  torusScale: 0.95,
 });
 const MOBILE_FLOW_LAYOUT_PROFILE = Object.freeze({
   gridMin: 1,
   gridDefault: 1,
-  gridMax: 2,
-  torusScale: 0.8,
+  gridMax: 1,
+  torusScale: 0.9,
 });
 const DESKTOP_LAYOUT_PROFILE = Object.freeze({
   gridMin: 2,
@@ -603,6 +604,19 @@ export function createApp() {
     }
   };
 
+  const applyConfigToScene = (config) => {
+    // fog
+    if (controlsState.state.fogEnabled) {
+      scene.fog = new THREE.FogExp2(config.visual.fogColor, config.visual.fogDensity);
+    }
+    // lights
+    if (lights?.ambientLight) lights.ambientLight.intensity = config.lights.ambient;
+    if (lights?.keyLight) lights.keyLight.intensity = config.lights.key;
+    if (lights?.rimLight) lights.rimLight.intensity = config.lights.rim;
+    if (lights?.fillLight) lights.fillLight.intensity = config.lights.fill;
+    if (lights?.centerLight) lights.centerLight.intensity = config.lights.center;
+  };
+
   const autoReduceGridCount = () => {
     const layoutProfile = getLayoutProfile(controlsState.state.presetKey);
     const current = controlsState.state.scene.gridCount ?? layoutProfile.gridDefault;
@@ -764,6 +778,9 @@ export function createApp() {
     }
     lights.setFlowAccents?.(key);
     applyLightingState();
+    // apply runtime config (fog/lights/motion) live
+    const runtimeConfig = buildRuntimeConfig(key, getDeviceProfile());
+    applyConfigToScene(runtimeConfig);
     applyAdaptivePixelRatio();
 
     if (applyPresetQuality) {

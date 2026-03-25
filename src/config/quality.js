@@ -17,7 +17,7 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   const isMobile =
     window.matchMedia?.('(max-width: 900px)').matches ||
     /Android|iPhone|iPad|iPod|Mobile/i.test(ua) ||
-    viewportWidth > 0 && viewportWidth <= 900;
+    (viewportWidth > 0 && viewportWidth <= 900);
 
   const desktopPresets = {
     [QUALITY_LEVELS.LOW]: {
@@ -50,38 +50,31 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   const mobilePresets = {
     [QUALITY_LEVELS.LOW]: {
       level: QUALITY_LEVELS.LOW,
-      tubularSegments: 92,
-      radialSegments: 46,
-      pixelRatioCap: 1,
+      tubularSegments: 100,
+      radialSegments: 50,
+      pixelRatioCap: 1.0,
       shadowsEnabled: false,
       shadowMapSize: 0,
     },
     [QUALITY_LEVELS.MEDIUM]: {
       level: QUALITY_LEVELS.MEDIUM,
-      tubularSegments: 130,
-      radialSegments: 65,
-      pixelRatioCap: 1.3,
+      tubularSegments: 145,
+      radialSegments: 72,
+      pixelRatioCap: 1.35,
       shadowsEnabled: false,
       shadowMapSize: 512,
     },
     [QUALITY_LEVELS.HIGH]: {
       level: QUALITY_LEVELS.HIGH,
-      tubularSegments: 160,
-      radialSegments: 80,
-      pixelRatioCap: 1.9,
+      tubularSegments: 185,
+      radialSegments: 92,
+      pixelRatioCap: 2.0,
       shadowsEnabled: true,
       shadowMapSize: 1024,
     },
   };
 
-  let preset = (isMobile ? mobilePresets : desktopPresets)[resolved] ?? desktopPresets.LOW;
-  // dodatkowy cap na mobile dla płynności
-  if (isMobile) {
-    preset = {
-      ...preset,
-      pixelRatioCap: Math.max(0.85, preset.pixelRatioCap * 0.9),
-    };
-  }
+  const preset = (isMobile ? mobilePresets : desktopPresets)[resolved] ?? desktopPresets.LOW;
 
   renderer.setPixelRatio(Math.min(dpr, preset.pixelRatioCap));
   renderer.shadowMap.enabled = preset.shadowsEnabled;

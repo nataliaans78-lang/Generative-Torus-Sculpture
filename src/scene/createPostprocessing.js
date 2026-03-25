@@ -4,12 +4,18 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 
+const isMobile =
+  (typeof navigator !== 'undefined' && /Mobi|Android/i.test(navigator.userAgent)) ||
+  (typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(max-width: 768px)').matches);
+
 const VignetteGrainShader = {
   uniforms: {
     tDiffuse: { value: null },
     time: { value: 0 },
     vignetteStrength: { value: 0.18 },
-    grainAmount: { value: 0.012 },
+    grainAmount: { value: isMobile ? 0.0 : 0.006 },
   },
   vertexShader: `
     varying vec2 vUv;

@@ -76,6 +76,12 @@ body::after {
   z-index: 0;
 }
 
+@media (max-width: 768px) {
+  body::after {
+    display: none;
+  }
+}
+
 canvas {
   display: block;
 }
