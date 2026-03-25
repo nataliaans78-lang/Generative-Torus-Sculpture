@@ -31,7 +31,7 @@ The system balances precision and motion — structure and energy.
 
 ## Preview (GIF)
 <p align="center">
-  <img src="assets/img/GLS.gif" alt="Generative Light Sculpture — preview" width="900" />
+  <img src="public/assets/img/GLS.gif" alt="Generative Light Sculpture — preview" width="900" />
 </p>
 
 ---
@@ -42,7 +42,7 @@ The system balances precision and motion — structure and energy.
 - **Flow Strong** — dynamic and punchy, still controlled  
 
 <p align="center">
-  <img src="assets/screenshot/StrongFlow.png" alt="Flow Strong preset" width="700" />
+  <img src="public/assets/screenshot/StrongFlow.png" alt="Flow Strong preset" width="700" />
 </p>
 
 ---
@@ -61,7 +61,7 @@ The system balances precision and motion — structure and energy.
 - Preserved behaviour with reduced detail  
 
 <p align="center">
-  <img src="assets/screenshot/MobileUi.png" alt="Mobile UI" width="220" />
+  <img src="public/assets/screenshot/MobileUi.png" alt="Mobile UI" width="220" />
 </p>
 
 ---
