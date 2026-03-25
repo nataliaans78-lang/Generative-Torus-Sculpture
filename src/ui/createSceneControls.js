@@ -6,12 +6,75 @@ const CHEVRON_ICON = '\u25be';
 const PANEL_COLLAPSE_ICON = '\u25b4';
 const PANEL_EXPAND_ICON = '\u25be';
 
+function formatSliderValue(value, step) {
+  const num = Number(value);
+  if (Number.isInteger(step)) return String(num);
+  if (step >= 0.1) return num.toFixed(1);
+  if (step >= 0.01) return num.toFixed(2);
+  return String(num);
+}
+
+function createPresetHud({ presetOptions = [], initialPreset, onSelectPreset }) {
+  const hud = document.createElement('div');
+  hud.className = 'portfolio-preset-hud';
+
+  const list = document.createElement('div');
+  list.className = 'portfolio-preset-hud__list';
+
+  const buttons = new Map();
+
+  presetOptions.slice(0, 3).forEach(({ key, label }, index) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'portfolio-preset-hud__button';
+    button.dataset.presetKey = key;
+    button.setAttribute('aria-label', `Preset ${label}`);
+    button.setAttribute('aria-pressed', key === initialPreset ? 'true' : 'false');
+
+    const indexNode = document.createElement('span');
+    indexNode.className = 'portfolio-preset-hud__index';
+    indexNode.textContent = String(index + 1);
+
+    const labelNode = document.createElement('span');
+    labelNode.className = 'portfolio-preset-hud__label';
+    labelNode.textContent = label;
+
+    button.append(indexNode, labelNode);
+
+    if (key === initialPreset) {
+      button.classList.add('is-active');
+    }
+
+    button.addEventListener('click', () => {
+      onSelectPreset?.(key);
+    });
+
+    buttons.set(key, button);
+    list.appendChild(button);
+  });
+
+  hud.append(list);
+  document.body.appendChild(hud);
+
+  return {
+    element: hud,
+    buttons,
+    setActive(key) {
+      buttons.forEach((button, presetKey) => {
+        const active = presetKey === key;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    },
+  };
+}
+
 function createSlider({ label, min, max, step, value, onInput }) {
   const row = document.createElement('label');
   row.className = 'portfolio-controls__slider';
   const text = document.createElement('span');
   text.className = 'portfolio-controls__slider-label';
-  text.textContent = `${label}: ${value}`;
+  text.textContent = `${label}: ${formatSliderValue(value, step)}`;
   const input = document.createElement('input');
   input.type = 'range';
   input.min = min;
@@ -20,7 +83,7 @@ function createSlider({ label, min, max, step, value, onInput }) {
   input.value = value;
   input.addEventListener('input', () => {
     const val = Number(input.value);
-    text.textContent = `${label}: ${Number.isInteger(step) ? val : val.toFixed(2)}`;
+    text.textContent = `${label}: ${formatSliderValue(val, step)}`;
     onInput(val);
   });
   row.append(text, input);
@@ -31,16 +94,14 @@ function createSlider({ label, min, max, step, value, onInput }) {
     },
     setValue(val) {
       input.value = val;
-      text.textContent = `${label}: ${Number.isInteger(step) ? val : val.toFixed(2)}`;
+      text.textContent = `${label}: ${formatSliderValue(val, step)}`;
     },
     setRange(nextMin, nextMax) {
       input.min = nextMin;
       input.max = nextMax;
       const clamped = Math.max(nextMin, Math.min(nextMax, Number(input.value)));
       input.value = clamped;
-      text.textContent = `${label}: ${
-        Number.isInteger(step) ? clamped : clamped.toFixed(2)
-      }`;
+      text.textContent = `${label}: ${formatSliderValue(clamped, step)}`;
     },
   };
 }
@@ -132,6 +193,25 @@ export function createSceneControls({
       presetSelect.appendChild(option);
     });
   }
+  const presetHud = hasPresetPicker
+    ? createPresetHud({
+        presetOptions,
+        initialPreset,
+        onSelectPreset: (key) => {
+          if (!presetSelect) return;
+          presetSelect.value = key;
+          presetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        },
+      })
+    : null;
+
+  const syncPresetUi = (key) => {
+    currentPresetKey = key;
+    if (presetSelect) {
+      presetSelect.value = key;
+    }
+    presetHud?.setActive(key);
+  };
 
   const resetAllButton = document.createElement('button');
   resetAllButton.type = 'button';
@@ -365,9 +445,7 @@ export function createSceneControls({
   const setPanelCollapsed = (collapsed) => {
     panelCollapsed = collapsed;
     container.classList.toggle('portfolio-controls--collapsed', collapsed);
-    const iconWhenCollapsed = isMobile() ? PANEL_COLLAPSE_ICON : PANEL_EXPAND_ICON;
-    const iconWhenExpanded = isMobile() ? PANEL_EXPAND_ICON : PANEL_COLLAPSE_ICON;
-    panelToggle.textContent = collapsed ? iconWhenCollapsed : iconWhenExpanded;
+    panelToggle.textContent = collapsed ? PANEL_EXPAND_ICON : PANEL_COLLAPSE_ICON;
     panelToggle.setAttribute(
       'aria-label',
       collapsed ? 'Show controls panel' : 'Hide controls panel',
@@ -479,13 +557,15 @@ export function createSceneControls({
   const setPresetVisibility = () => {
     if (!sectionPreset) return;
     const mobile = isMobileViewport();
-    // On mobile we lock to default preset (handled upstream) and hide the picker.
     sectionPreset.wrapper.style.display = mobile ? 'none' : 'block';
+    if (presetHud?.element) {
+      presetHud.element.classList.toggle('is-mobile', mobile);
+      presetHud.element.style.display = mobile ? 'none' : 'flex';
+    }
   };
 
   const applyDefaultSectionState = () => {
     const mobile = isMobile();
-    // Hide preset picker on mobile, keep scene & quality visible but collapsible.
     if (sectionPreset) {
       sectionPreset.wrapper.style.display = mobile ? 'none' : 'block';
     }
@@ -502,10 +582,11 @@ export function createSceneControls({
 
   if (presetSelect) {
     presetSelect.addEventListener('change', () => {
-      currentPresetKey = presetSelect.value;
-      onPresetChange?.(presetSelect.value);
-      setLightingVisibility(presetSelect.value);
-      applyPresetUiLayout(presetSelect.value);
+      const nextPreset = presetSelect.value;
+      syncPresetUi(nextPreset);
+      onPresetChange?.(nextPreset);
+      setLightingVisibility(nextPreset);
+      applyPresetUiLayout(nextPreset);
       drawer.scrollTop = 0;
     });
   }
@@ -546,7 +627,7 @@ export function createSceneControls({
   setPanelCollapsed(isMobile());
   setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   const resetPanel = (presetKey = initialPreset) => {
-    currentPresetKey = presetKey;
+    syncPresetUi(presetKey);
     setPanelCollapsed(false);
     applyDefaultSectionState();
     setPresetVisibility();
@@ -555,14 +636,62 @@ export function createSceneControls({
     drawer.scrollTop = 0;
     setQualityMenuOpen(!sectionQuality.collapsed);
   };
+  const triggerPresetShortcut = (index) => {
+    if (!presetSelect) return;
+    const option = presetOptions[index];
+    if (!option) return;
+    presetSelect.value = option.key;
+    presetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+  };
+
+  const isTypingTarget = (target) =>
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) ||
+      target.closest('[contenteditable="true"]'));
+
+  const onWindowKeyDown = (event) => {
+    if (isTypingTarget(event.target)) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
+    if (event.key === ' ' || event.code === 'Space') {
+      event.preventDefault();
+      playButton.click();
+      return;
+    }
+    if (event.key === 'h' || event.key === 'H') {
+      event.preventDefault();
+      panelToggle.click();
+      return;
+    }
+    if (event.key === 'r' || event.key === 'R') {
+      event.preventDefault();
+      resetAllButton.click();
+      return;
+    }
+    if (event.key === '1') {
+      event.preventDefault();
+      triggerPresetShortcut(0);
+      return;
+    }
+    if (event.key === '2') {
+      event.preventDefault();
+      triggerPresetShortcut(1);
+      return;
+    }
+    if (event.key === '3') {
+      event.preventDefault();
+      triggerPresetShortcut(2);
+    }
+  };
+
+  window.addEventListener('keydown', onWindowKeyDown);
   window.addEventListener('resize', () => {
     const mobileViewport = isMobile();
     if (mobileViewport && !lastMobileViewport) {
-      setPanelCollapsed(true);
+      panelCollapsed = true;
     }
     if (!mobileViewport && lastMobileViewport) {
-      setPanelCollapsed(false);
-      applyDefaultSectionState();
+      panelCollapsed = false;
     }
     lastMobileViewport = mobileViewport;
     setPresetVisibility();
@@ -570,19 +699,14 @@ export function createSceneControls({
     applyDefaultSectionState();
     updateQualityVisibility();
     setPanelCollapsed(panelCollapsed);
-    applyPresetUiLayout(currentPresetKey);
-    setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   });
 
   return {
     setPreset(key) {
-      currentPresetKey = key;
-      if (presetSelect) {
-        presetSelect.value = key;
-      }
+      syncPresetUi(key);
       setPresetVisibility();
       setLightingVisibility(key);
-       applyPresetUiLayout(key);
+      applyPresetUiLayout(key);
       drawer.scrollTop = 0;
     },
     setLightingValues(values) {
