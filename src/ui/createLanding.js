@@ -34,9 +34,10 @@ export function createLanding({
     item.textContent = label;
     list.appendChild(item);
   });
+  const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
   const footer = document.createElement('p');
   footer.className = 'landing__hint';
-  footer.textContent = 'Press Enter to begin';
+  footer.textContent = isMobile() ? 'Tap to begin' : 'Press Enter to begin';
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'landing__cta';
