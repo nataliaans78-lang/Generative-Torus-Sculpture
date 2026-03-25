@@ -8,7 +8,7 @@ export const PRESETS = Object.freeze({
       keyIntensity: 3.4,
       rimIntensity: 3.15,
       fillIntensity: 1.16,
-      centerIntensity: 1.34,
+      centerIntensity: 2.5,
       flowSpotIntensity: 0,
       flowPulseIntensity: 0,
       flowSpeed: 1.0,

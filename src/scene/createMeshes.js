@@ -244,6 +244,12 @@ export function createTorusCluster(
   let elapsed = 0;
   let introTime = 0;
   const INTRO_DURATION = 2.6;
+  const getElapsed = () => elapsed;
+  const setElapsed = (timeSeconds = 0, { skipIntro = true } = {}) => {
+    if (!Number.isFinite(timeSeconds)) return;
+    elapsed = timeSeconds;
+    introTime = skipIntro ? Math.max(INTRO_DURATION, timeSeconds) : Math.max(0, timeSeconds);
+  };
   let audioBlend = 0;
   let deepAudioBlend = 0;
   let deepBass = 0;
@@ -517,6 +523,8 @@ export function createTorusCluster(
     get mesh() {
       return mesh;
     },
+    getElapsed,
+    setElapsed,
     setHoverIndex,
     setGeometryDetail,
     setLayout,

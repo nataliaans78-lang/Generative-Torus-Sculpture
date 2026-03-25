@@ -331,9 +331,27 @@ export function createApp() {
       return null;
     }
   };
+  const migrateOverrides = (state) => {
+    try {
+      const overrides = state?.overrides;
+      if (!overrides || typeof overrides !== 'object') return;
+      const deep = overrides.DEEP_BLUE;
+      const targetCenter = PRESETS.DEEP_BLUE.lighting.centerIntensity;
+      if (
+        deep?.lighting &&
+        typeof deep.lighting.centerIntensity === 'number' &&
+        deep.lighting.centerIntensity < targetCenter
+      ) {
+        delete deep.lighting.centerIntensity;
+      }
+    } catch {
+      // ignore migration issues
+    }
+  };
   const isPresetKey = (value) => typeof value === 'string' && availablePresetKeySet.has(value);
   const isQualityLevel = (value) => Object.values(QUALITY_LEVELS).includes(value);
   const storedState = readStoredState() ?? createInitialStoredState();
+  migrateOverrides(storedState);
   if (isMobileDevice()) {
     storedState.preset = defaultPresetKey;
     const mobileQuality = getMobilePresetQuality(storedState?.preset ?? defaultPresetKey);
@@ -589,6 +607,7 @@ export function createApp() {
   })();
 
   const rebuildMeshes = () => {
+    const previousElapsed = torusCluster?.getElapsed?.();
     if (torusCluster) {
       torusCluster.dispose();
     }
@@ -617,7 +636,9 @@ export function createApp() {
       sharedMaterial: torusResources.material,
       sharedStripeTexture: torusResources.stripeTexture,
     });
-    if (audio?.isPlaying()) {
+    if (Number.isFinite(previousElapsed)) {
+      torusCluster.setElapsed?.(previousElapsed);
+    } else if (audio?.isPlaying()) {
       torusCluster.skipIntro?.();
     }
   };
