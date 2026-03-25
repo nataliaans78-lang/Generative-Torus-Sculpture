@@ -43,7 +43,7 @@ export const PRESETS = Object.freeze({
     roomEnabled: true,
     fogEnabled: true,
     lighting: Object.freeze({
-      keyIntensity: 3.25,
+      keyIntensity: 2.9,
       rimIntensity: 2.3,
       fillIntensity: 1.41,
       centerIntensity: 1.08,
