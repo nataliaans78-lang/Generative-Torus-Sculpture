@@ -37,7 +37,7 @@ export function createLanding({
   const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
   const footer = document.createElement('p');
   footer.className = 'landing__hint';
-  footer.textContent = isMobile() ? 'Tap to begin' : 'Press Enter to begin';
+  footer.textContent = isMobile() ? 'Tap anywhere to begin' : 'Press Enter to begin';
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'landing__cta';
@@ -71,6 +71,10 @@ export function createLanding({
     }, 360);
   };
   button.addEventListener('click', enter);
+  overlay.addEventListener('click', () => {
+    if (entered) return;
+    enter();
+  });
   window.addEventListener('keydown', handleKeydown);
   button.focus();
   return {
