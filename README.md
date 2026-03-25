@@ -18,14 +18,14 @@ Designed as a real-time visual system balancing performance, responsiveness, and
 A field of toroidal forms becomes a study of repetition and controlled variation.  
 Light defines structure, audio modulates intensity and rhythm.  
 Bloom and fog dissolve geometry into atmosphere.  
-Each preset reveals a different spatial mood.  
+Each preset reveals a distinct spatial mood.  
 The system balances precision and motion — structure and energy.
 
 ---
 
 ## Live Demo
-- Page: https://nataliaans78-lang.github.io/Generative-Torus-Sculpture/
-- Full MP4 preview: https://github.com/nataliaans78-lang/Generative-Torus-Sculpture/releases/latest/download/GLS_optimized.mp4
+- Page: https://nataliaans78-lang.github.io/Generative-Torus-Sculpture/  
+- Full MP4 preview: https://github.com/nataliaans78-lang/Generative-Torus-Sculpture/releases/latest/download/GLS_optimized.mp4  
 
 ---
 
@@ -37,9 +37,9 @@ The system balances precision and motion — structure and energy.
 ---
 
 ## Presets
-- **Deep Blue** — static, gallery-like; lights are non–audio-reactive, only minimal torus motion  
-- **Flow Soft** — soft, dark, audio-reactive without blowouts  
-- **Flow Strong** — dynamic and punchy, still controlled  
+- **Deep Blue** — static, gallery-like; lights are non–audio-reactive, minimal torus motion  
+- **Flow Soft** — soft, dark, audio-reactive without overexposure  
+- **Flow Strong** — dynamic and punchy while remaining controlled  
 
 <p align="center">
   <img src="public/assets/screenshot/StrongFlow.png" alt="Flow Strong preset" width="700" />
@@ -56,9 +56,9 @@ The system balances precision and motion — structure and energy.
 ---
 
 ## Mobile
-- Lighter geometry and pixel ratio for smoother performance  
-- Centered, simplified control panel  
-- Preserved behaviour with reduced detail  
+- Reduced geometry complexity and pixel ratio for smoother performance  
+- Centered and simplified control panel  
+- Preserved interaction behaviour with reduced detail  
 
 <p align="center">
   <img src="public/assets/screenshot/MobileUi.png" alt="Mobile UI" width="220" />
@@ -77,4 +77,4 @@ The system balances precision and motion — structure and energy.
 
 ## Project Type
 Experimental generative WebGL sculpture exploring light, repetition, and spatial rhythm.  
-Created as an artistic + technical exploration of procedural form and atmosphere.
+Created as both an artistic and technical exploration of procedural form and atmosphere.
