@@ -621,9 +621,6 @@ canvas {
   .portfolio-controls__panel-toggle {
     top: 4px;
   }
-  .qualityPicker {
-    display: none !important;
-  }
   .portfolio-controls {
     width: min(420px, calc(100vw - 20px));
     left: 50%;
@@ -651,20 +648,18 @@ canvas {
     display: none;
   }
   .qualityMenu {
+    display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     position: static;
-    display: none;
     width: 100%;
-    max-height: none;
-    overflow: visible;
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    padding: 0;
+    max-height: min(170px, 38vh);
+    overflow-y: auto;
+    overflow-x: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    background: rgba(10, 17, 33, 0.9);
+    padding: 6px;
     z-index: auto;
-  }
-  .qualityMenu.is-open {
-    display: grid;
   }
   .portfolio-controls__drawer {
     -webkit-overflow-scrolling: touch;
@@ -676,16 +671,7 @@ canvas {
     display: none;
   }
   .qualityMenu {
-    display: none;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    max-height: min(170px, 38vh);
-    overflow-y: auto;
-    overflow-x: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 10px;
-    background: rgba(10, 17, 33, 0.95);
-    padding: 6px;
-    margin-top: 0;
+    display: grid;
   }
   .qualityMenu.is-open {
     display: grid;
