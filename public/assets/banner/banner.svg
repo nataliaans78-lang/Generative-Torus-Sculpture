@@ -24,12 +24,21 @@
       <stop offset="1" stop-color="#000000" stop-opacity="0"/>
     </radialGradient>
 
+    <!-- moving light on torus -->
     <linearGradient id="torusOuter" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#a9e9ff" stop-opacity="0.06"/>
-      <stop offset="0.18" stop-color="#9fe5ff" stop-opacity="0.95"/>
-      <stop offset="0.52" stop-color="#ffffff" stop-opacity="0.74"/>
-      <stop offset="0.8" stop-color="#97a2ff" stop-opacity="0.36"/>
+      <stop offset="0.16" stop-color="#9fe5ff" stop-opacity="0.80"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="0.66" stop-color="#9bcfff" stop-opacity="0.64"/>
+      <stop offset="0.82" stop-color="#97a2ff" stop-opacity="0.34"/>
       <stop offset="1" stop-color="#97a2ff" stop-opacity="0.04"/>
+      <animateTransform
+        attributeName="gradientTransform"
+        type="rotate"
+        from="0 0.5 0.5"
+        to="360 0.5 0.5"
+        dur="12s"
+        repeatCount="indefinite"/>
     </linearGradient>
 
     <linearGradient id="torusInner" x1="1" y1="0" x2="0" y2="1">
@@ -62,9 +71,19 @@
     </filter>
 
     <style>
-      .floatA { animation: floatA 9s ease-in-out infinite; transform-origin: 1000px 210px; }
-      .floatB { animation: floatB 12s ease-in-out infinite; transform-origin: 1000px 210px; }
+      .floatA { animation: floatA 9s ease-in-out infinite; transform-origin: 1070px 210px; }
+      .floatB { animation: floatB 12s ease-in-out infinite; transform-origin: 1070px 210px; }
       .pulse  { animation: pulse 6s ease-in-out infinite; }
+
+      .spin {
+        animation: spin 36s linear infinite;
+        transform-origin: 980px 210px;
+      }
+
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
 
       @keyframes floatA {
         0%,100% { transform: translate(0px, 0px); }
@@ -130,7 +149,7 @@
     </g>
 
     <!-- main hero torus -->
-    <g class="pulse" filter="url(#softGlow)">
+    <g class="pulse spin" filter="url(#softGlow)">
       <ellipse cx="980" cy="210" rx="188" ry="84" fill="none" stroke="url(#torusOuter)" stroke-width="4.6"/>
       <ellipse cx="980" cy="210" rx="160" ry="72" fill="none" stroke="url(#torusInner)" stroke-width="2.4" opacity="0.82"/>
     </g>

@@ -22,7 +22,7 @@ export const LIGHT_SETTINGS = {
   },
   rim: {
     color: 0x9ecbff,
-    intensity: 2.0,
+    intensity: 2.3,
     position: [-4.8, 2.8, -5.6],
   },
   fill: {
@@ -64,7 +64,7 @@ export const MESH_SETTINGS = {
 export const MATERIAL_SETTINGS = {
   opacity: 0.95,
   metalness: 0.1,
-  roughness: 0.55,
+  roughness: 0.65, // slightly lower for clearer highlights
   transparent: false,
   depthWrite: true,
   color: 0xffffff,

@@ -115,7 +115,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
   scene.add(rig);
   const roomMaterial = new THREE.MeshStandardMaterial({
     color: 0x060c18,
-    roughness: 1,
+    roughness: 0.7,
     metalness: 0,
     side: THREE.BackSide,
     emissive: 0x0a1430,

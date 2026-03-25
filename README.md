@@ -1,10 +1,16 @@
 <p align="center">
-  <img src="public/assets/banner/banner.svg" alt="Generative Light Sculpture — banner" width="900" />
+  <img src="assets/banner/banner.svg" alt="Generative Light Sculpture — banner" width="900" />
 </p>
 
 <p align="center">
   <sub>Three.js · InstancedMesh · Bloom/Fog · Audio-reactive lighting · Shader injection</sub>
 </p>
+
+---
+
+## Overview
+Interactive WebGL experiment combining instanced geometry, audio-reactive lighting, and post-processing to create dynamic light sculptures.  
+Designed as a real-time visual system balancing performance, responsiveness, and atmospheric rendering.
 
 ---
 
@@ -21,46 +27,51 @@ The system balances precision and motion — structure and energy.
 - Page: https://nataliaans78-lang.github.io/Generative-Torus-Sculpture/
 - Full MP4 preview: https://github.com/nataliaans78-lang/Generative-Torus-Sculpture/releases/latest/download/GLS_optimized.mp4
 
+---
+
 ## Preview (GIF)
 <p align="center">
-  <img src="public/assets/img/GLS.gif" alt="Generative Light Sculpture — preview" width="900" />
+  <img src="assets/img/GLS.gif" alt="Generative Light Sculpture — preview" width="900" />
 </p>
 
 ---
 
 ## Presets
-- **Deep Blue** — static, gallery-like; lights are non–audio-reactive, only minimal torus motion.
-- **Flow Soft** — soft, dark, audio-reactive without blowouts.
-- **Flow Strong** — dynamic and punchy, still dark.
+- **Deep Blue** — static, gallery-like; lights are non–audio-reactive, only minimal torus motion  
+- **Flow Soft** — soft, dark, audio-reactive without blowouts  
+- **Flow Strong** — dynamic and punchy, still controlled  
 
 <p align="center">
-  <img src="public/assets/screenshot/DeepBlue.png" alt="Deep Blue preset" width="600" />
-</p>
-<p align="center">
-  <img src="public/assets/screenshot/SoftFlow.png" alt="Flow Soft preset" width="600" />
-</p>
-<p align="center">
-  <img src="public/assets/screenshot/StrongFlow.png" alt="Flow Strong preset" width="600" />
+  <img src="assets/screenshot/StrongFlow.png" alt="Flow Strong preset" width="700" />
 </p>
 
 ---
 
+## Performance
+- Adaptive quality system based on runtime performance  
+- Automatic adjustment of geometry density and rendering resolution  
+- Stable frame pacing across different devices  
+- Optimized for both desktop and mobile environments  
+
+---
+
 ## Mobile
-- Lighter geometry and pixel ratio for smoother performance.
-- Centered, simplified control panel; flow behaviour matches desktop but with reduced detail.
+- Lighter geometry and pixel ratio for smoother performance  
+- Centered, simplified control panel  
+- Preserved behaviour with reduced detail  
 
 <p align="center">
-  <img src="public/assets/screenshot/MobileUi.png" alt="Mobile UI" width="200" />
+  <img src="assets/screenshot/MobileUi.png" alt="Mobile UI" width="220" />
 </p>
 
 ---
 
 ## Tech Stack
-- Three.js / WebGL
-- InstancedMesh
-- Custom shader injection
-- Audio-reactive light modulation
-- Post-processing: Bloom, Fog
+- Three.js / WebGL  
+- InstancedMesh  
+- Custom shader injection  
+- Audio-reactive light modulation  
+- Post-processing: Bloom, Fog  
 
 ---
 

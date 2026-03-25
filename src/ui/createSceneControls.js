@@ -324,6 +324,21 @@ export function createSceneControls({
       }
     });
   };
+  const isShortScreen = () => window.innerHeight < 860;
+  const setSectionsOpen = (openIds = []) => {
+    sections.forEach((section) => {
+      const shouldOpen = openIds.includes(section.wrapper.dataset.sectionId);
+      setSectionCollapsed(section, !shouldOpen);
+    });
+  };
+  const applyPresetUiLayout = (presetKey) => {
+    if (isMobile()) return;
+    if (!isShortScreen()) return;
+    const openIds = ['preset', 'scene'];
+    setSectionsOpen(openIds);
+    setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
+    requestAnimationFrame(refreshExpandedSectionHeights);
+  };
   const setQualityMenuOpen = (open) => {
     if (!open) {
       forceCloseQualityMenu();
@@ -364,9 +379,9 @@ export function createSceneControls({
     } else {
       drawer.style.maxHeight = '';
       drawer.scrollTop = 0;
-      // desktop: wróć do domyślnego rozwinięcia sekcji po ponownym otwarciu panelu
+      // desktop: wróć do domyślnego (lub kompaktowego) stanu sekcji
       if (!isMobile()) {
-        sections.forEach((section) => setSectionCollapsed(section, false));
+        applyDefaultSectionState();
       }
       setQualityMenuOpen(!sectionQuality.collapsed);
     }
@@ -428,6 +443,7 @@ export function createSceneControls({
     if (section === sectionQuality) {
       setQualityMenuOpen(!nextCollapsed);
     }
+    requestAnimationFrame(refreshExpandedSectionHeights);
   };
 
   sections.forEach((section) => {
@@ -463,6 +479,7 @@ export function createSceneControls({
       return;
     }
     sections.forEach((section) => setSectionCollapsed(section, false));
+    applyPresetUiLayout(currentPresetKey);
   };
 
   if (presetSelect) {
@@ -470,6 +487,7 @@ export function createSceneControls({
       currentPresetKey = presetSelect.value;
       onPresetChange?.(presetSelect.value);
       setLightingVisibility(presetSelect.value);
+      applyPresetUiLayout(presetSelect.value);
       drawer.scrollTop = 0;
     });
   }
@@ -515,6 +533,7 @@ export function createSceneControls({
     applyDefaultSectionState();
     setPresetVisibility();
     setLightingVisibility(presetKey);
+    applyPresetUiLayout(presetKey);
     drawer.scrollTop = 0;
     setQualityMenuOpen(!sectionQuality.collapsed);
   };
@@ -531,6 +550,7 @@ export function createSceneControls({
     setPresetVisibility();
     setLightingVisibility(currentPresetKey);
     setPanelCollapsed(panelCollapsed);
+    applyPresetUiLayout(currentPresetKey);
     setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
   });
 
@@ -542,6 +562,7 @@ export function createSceneControls({
       }
       setPresetVisibility();
       setLightingVisibility(key);
+       applyPresetUiLayout(key);
       drawer.scrollTop = 0;
     },
     setLightingValues(values) {

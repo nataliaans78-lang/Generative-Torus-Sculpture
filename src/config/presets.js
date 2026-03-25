@@ -6,9 +6,9 @@ export const PRESETS = Object.freeze({
     fogEnabled: true,
     lighting: Object.freeze({
       keyIntensity: 3.4,
-      rimIntensity: 2.6,
-      fillIntensity: 0.9,
-      centerIntensity: 0.9,
+      rimIntensity: 3.15,
+      fillIntensity: 1.16,
+      centerIntensity: 1.34,
       flowSpotIntensity: 0,
       flowPulseIntensity: 0,
       flowSpeed: 1.0,
@@ -17,7 +17,7 @@ export const PRESETS = Object.freeze({
     }),
     room: Object.freeze({
       color: 0x060c18,
-      emissiveIntensity: 0.24,
+      emissiveIntensity: 0.29,
       backgroundColor: null,
     }),
     fog: Object.freeze({
@@ -44,7 +44,7 @@ export const PRESETS = Object.freeze({
     fogEnabled: true,
     lighting: Object.freeze({
       keyIntensity: 3.25,
-      rimIntensity: 2.0,
+      rimIntensity: 2.3,
       fillIntensity: 1.41,
       centerIntensity: 1.08,
       flowSpotIntensity: 2.5,
@@ -81,10 +81,10 @@ export const PRESETS = Object.freeze({
     roomEnabled: true,
     fogEnabled: true,
     lighting: Object.freeze({
-      keyIntensity: 3.08,
-      rimIntensity: 1.96,
-      fillIntensity: 1.32,
-      centerIntensity: 0.98,
+      keyIntensity: 3.25,
+      rimIntensity: 2.5,
+      fillIntensity: 1.4,
+      centerIntensity: 1.3,
       flowSpotIntensity: 2.7,
       flowPulseIntensity: 1.34,
       flowSpeed: 1.2,

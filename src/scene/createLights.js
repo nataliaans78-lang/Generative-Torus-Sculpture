@@ -21,7 +21,7 @@ export function createLights(scene, settings) {
   deepBlueAccentBlue.position.set(4.4, 2.2, 3.2);
   scene.add(deepBlueAccentBlue);
 
-  const deepBlueAccentViolet = new THREE.PointLight(0xa78bfa, 0, 18, 2);
+  const deepBlueAccentViolet = new THREE.PointLight(0x4a3cff, 0, 18, 2);
   deepBlueAccentViolet.position.set(-4.2, 1.8, -3.1);
   scene.add(deepBlueAccentViolet);
 
@@ -133,7 +133,7 @@ export function createLights(scene, settings) {
     deepWallActive = false;
     if (presetKey === 'FLOW_SOFT') {
       deepBlueAccentBlue.intensity = 1.18 * scale;
-      deepBlueAccentViolet.intensity = 0.56 * scale;
+      deepBlueAccentViolet.intensity = 0.48 * scale;
       ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
       deepWallLeft.intensity = 0;
       deepWallRight.intensity = 0;
@@ -141,7 +141,7 @@ export function createLights(scene, settings) {
     }
     if (presetKey === 'FLOW_STRONG') {
       deepBlueAccentBlue.intensity = 0.72 * scale;
-      deepBlueAccentViolet.intensity = 1.15 * scale;
+      deepBlueAccentViolet.intensity = 1.25 * scale;
       ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
       deepWallLeft.intensity = 0;
       deepWallRight.intensity = 0;

@@ -285,6 +285,19 @@ export function createApp() {
     flow.setHasInteracted?.(true);
   };
 
+  // FPS watchdog state (shared with UI callbacks)
+  let frameTimeSum = 0;
+  let frameCount = 0;
+  let lastFpsCheck = 0;
+
+  let autoDropped = false;
+  let qualityCooldownUntil = 0;
+  let lowFpsWindows = 0;
+  let highFpsWindows = 0;
+
+  let autoQualityEnabled = true;
+  const AUTO_QUALITY_DURATION = 20; // seconds
+
   const controlsState = createControlState();
   const defaultPresetKey = 'DEEP_BLUE';
   const availablePresetKeys = Object.keys(PRESETS);
@@ -579,6 +592,11 @@ export function createApp() {
     if (torusCluster) {
       torusCluster.dispose();
     }
+    const isDeepBlue = controlsState.state.presetKey === 'DEEP_BLUE';
+    const baseScale = getLayoutProfile(controlsState.state.presetKey).torusScale;
+    const scaleMultiplier = isDeepBlue ? baseScale * 1.05 : baseScale;
+    const heroScale = isMobileDevice() ? 1.35 : isDeepBlue ? 1.25 : 1;
+
     torusCluster = createTorusCluster(scene, {
       layout: {
         nx: layoutState.nx,
@@ -594,8 +612,8 @@ export function createApp() {
       motion: {
         driftAmp: layoutState.driftAmp,
       },
-      scaleMultiplier: getLayoutProfile(controlsState.state.presetKey).torusScale,
-      heroScaleMultiplier: isMobileDevice() ? 1.35 : 1,
+      scaleMultiplier,
+      heroScaleMultiplier: heroScale,
       sharedMaterial: torusResources.material,
       sharedStripeTexture: torusResources.stripeTexture,
     });
@@ -872,6 +890,7 @@ export function createApp() {
     },
     onQualityChange: (level) => {
       markInteracted();
+      autoQualityEnabled = false;
       applyQualityLevel(level);
       controlsState.setQuality(level);
       storedState.quality = level;
@@ -905,6 +924,14 @@ export function createApp() {
     onResetAll: async () => {
       STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
       markInteracted();
+      autoQualityEnabled = true;
+      qualityCooldownUntil = 0;
+      lowFpsWindows = 0;
+      highFpsWindows = 0;
+      frameTimeSum = 0;
+      frameCount = 0;
+      lastFpsCheck = 0;
+
       if (audio) {
         audio.pause();
         await audio.setFile(AUDIO_SETTINGS.url, false, false);
@@ -983,13 +1010,15 @@ export function createApp() {
   const targetMouseOffset = new THREE.Vector3();
   let startupBlend = 0;
   // FPS watchdog (auto quality adjust with hysteresis)
-  let fpsSum = 0;
-  let fpsCount = 0;
-  let lastFpsCheck = 0;
-  let autoDropped = false;
   const qualityOrder = [QUALITY_LEVELS.HIGH, QUALITY_LEVELS.MEDIUM, QUALITY_LEVELS.LOW];
-  const FPS_DROP = 40;
-  const FPS_RECOVER = 58;
+
+  const FPS_DROP = 42;
+  const FPS_RECOVER = 56;
+  const CHECK_INTERVAL = 3;
+  const QUALITY_COOLDOWN = 10; // seconds
+
+  const DROP_WINDOWS_REQUIRED = 2;
+  const RECOVER_WINDOWS_REQUIRED = 3;
 
   const setQualityAndPersist = (level) => {
     applyQualityLevel(level);
@@ -997,29 +1026,59 @@ export function createApp() {
     storedState.quality = level;
     ui.setQuality(level);
     writeStoredState();
+
+    qualityCooldownUntil = clock.getElapsedTime() + QUALITY_COOLDOWN;
+    lowFpsWindows = 0;
+    highFpsWindows = 0;
   };
 
-  const maybeAutoAdjustQuality = (avgFps) => {
-    const current = controlsState.state.quality || QUALITY_LEVELS.HIGH;
-    const idx = qualityOrder.indexOf(current);
-    // drop quality if low FPS
-    if (avgFps < FPS_DROP && idx < qualityOrder.length - 1) {
-      const next = qualityOrder[idx + 1];
-      setQualityAndPersist(next);
-      autoDropped = true;
+  const maybeAutoAdjustQuality = (avgFps, elapsed) => {
+    if (!autoQualityEnabled) return;
+    if (elapsed > AUTO_QUALITY_DURATION) {
+      autoQualityEnabled = false;
       return;
     }
-    // if already at lowest quality and nadal wolno, próbuj zmniejszyć grid
-    if (avgFps < FPS_DROP && idx === qualityOrder.length - 1) {
-      const reduced = forceGridCountToTwo() || autoReduceGridCount();
-      if (reduced) {
+
+    if (elapsed < qualityCooldownUntil) return;
+
+    const current = controlsState.state.quality || QUALITY_LEVELS.HIGH;
+    const idx = qualityOrder.indexOf(current);
+
+    if (avgFps < FPS_DROP) {
+      lowFpsWindows += 1;
+      highFpsWindows = 0;
+    } else if (avgFps > FPS_RECOVER) {
+      highFpsWindows += 1;
+      lowFpsWindows = 0;
+    } else {
+      lowFpsWindows = 0;
+      highFpsWindows = 0;
+    }
+
+    if (lowFpsWindows >= DROP_WINDOWS_REQUIRED) {
+      if (idx < qualityOrder.length - 1) {
+        const next = qualityOrder[idx + 1];
+        setQualityAndPersist(next);
         autoDropped = true;
+        return;
+      }
+
+      if (idx === qualityOrder.length - 1) {
+        const reduced = forceGridCountToTwo() || autoReduceGridCount();
+        if (reduced) {
+          qualityCooldownUntil = elapsed + QUALITY_COOLDOWN;
+          lowFpsWindows = 0;
+          highFpsWindows = 0;
+          autoDropped = true;
+        }
+        return;
       }
     }
-    // recover one level if FPS healthy and previously dropped
-    if (autoDropped && avgFps > FPS_RECOVER && idx > 0) {
+
+    if (autoDropped && highFpsWindows >= RECOVER_WINDOWS_REQUIRED && idx > 0) {
       const prev = qualityOrder[idx - 1];
       setQualityAndPersist(prev);
+
       if (prev === QUALITY_LEVELS.HIGH) {
         autoDropped = false;
       }
@@ -1032,14 +1091,17 @@ export function createApp() {
     startupBlend = Math.min(startupBlend + deltaTime / 0.9, 1);
     // FPS sampling
     if (deltaTime > 0) {
-      fpsSum += 1 / deltaTime;
-      fpsCount += 1;
+      frameTimeSum += deltaTime;
+      frameCount += 1;
     }
-    if (elapsed - lastFpsCheck > 3 && fpsCount > 0) {
-      const avgFps = fpsSum / fpsCount;
-      maybeAutoAdjustQuality(avgFps);
-      fpsSum = 0;
-      fpsCount = 0;
+    if (elapsed - lastFpsCheck > CHECK_INTERVAL && frameCount > 0) {
+      const avgFrameTime = frameTimeSum / frameCount;
+      const avgFps = 1 / avgFrameTime;
+
+      maybeAutoAdjustQuality(avgFps, elapsed);
+
+      frameTimeSum = 0;
+      frameCount = 0;
       lastFpsCheck = elapsed;
     }
     const reactive = flow.update(deltaTime);
