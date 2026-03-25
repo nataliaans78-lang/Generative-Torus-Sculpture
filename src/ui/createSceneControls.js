@@ -445,7 +445,12 @@ export function createSceneControls({
   const setPanelCollapsed = (collapsed) => {
     panelCollapsed = collapsed;
     container.classList.toggle('portfolio-controls--collapsed', collapsed);
-    panelToggle.textContent = collapsed ? PANEL_EXPAND_ICON : PANEL_COLLAPSE_ICON;
+    const mobile = isMobile();
+    if (mobile) {
+      panelToggle.textContent = collapsed ? PANEL_COLLAPSE_ICON : PANEL_EXPAND_ICON;
+    } else {
+      panelToggle.textContent = collapsed ? PANEL_EXPAND_ICON : PANEL_COLLAPSE_ICON;
+    }
     panelToggle.setAttribute(
       'aria-label',
       collapsed ? 'Show controls panel' : 'Hide controls panel',
