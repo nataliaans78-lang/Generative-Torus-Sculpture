@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner/banner.svg" alt="Generative Light Sculpture — banner" width="900" />
+  <img src="public/assets/banner/banner.svg" alt="Generative Light Sculpture — banner" width="900" />
 </p>
 
 <p align="center">

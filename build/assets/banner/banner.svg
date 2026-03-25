@@ -1,118 +1,198 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-label="Generative Light Sculpture banner">
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="420" viewBox="0 0 1400 420" role="img" aria-label="Generative Torus Sculpture banner">
   <defs>
-    <!-- Background gradient -->
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#070A16"/>
-      <stop offset="0.55" stop-color="#0B1A3A"/>
-      <stop offset="1" stop-color="#090B12"/>
+      <stop offset="0" stop-color="#040814"/>
+      <stop offset="0.5" stop-color="#081227"/>
+      <stop offset="1" stop-color="#050811"/>
     </linearGradient>
 
-    <!-- Soft glow gradients -->
-    <radialGradient id="glowA" cx="50%" cy="45%" r="60%">
-      <stop offset="0" stop-color="#57B8FF" stop-opacity="0.55"/>
-      <stop offset="0.45" stop-color="#57B8FF" stop-opacity="0.10"/>
-      <stop offset="1" stop-color="#57B8FF" stop-opacity="0"/>
+    <radialGradient id="ambientBlue" cx="70%" cy="42%" r="48%">
+      <stop offset="0" stop-color="#6ecfff" stop-opacity="0.22"/>
+      <stop offset="0.38" stop-color="#6ecfff" stop-opacity="0.08"/>
+      <stop offset="1" stop-color="#6ecfff" stop-opacity="0"/>
     </radialGradient>
 
-    <radialGradient id="glowB" cx="55%" cy="55%" r="60%">
-      <stop offset="0" stop-color="#8A6CFF" stop-opacity="0.40"/>
-      <stop offset="0.5" stop-color="#8A6CFF" stop-opacity="0.08"/>
-      <stop offset="1" stop-color="#8A6CFF" stop-opacity="0"/>
+    <radialGradient id="ambientViolet" cx="73%" cy="48%" r="42%">
+      <stop offset="0" stop-color="#8b72ff" stop-opacity="0.16"/>
+      <stop offset="0.42" stop-color="#8b72ff" stop-opacity="0.05"/>
+      <stop offset="1" stop-color="#8b72ff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Torus stroke gradient -->
-    <linearGradient id="torusStroke" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#67D1FF" stop-opacity="0.15"/>
-      <stop offset="0.25" stop-color="#67D1FF" stop-opacity="0.85"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.55"/>
-      <stop offset="0.75" stop-color="#9A7BFF" stop-opacity="0.85"/>
-      <stop offset="1" stop-color="#9A7BFF" stop-opacity="0.15"/>
+    <radialGradient id="floorFade" cx="50%" cy="100%" r="72%">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.48"/>
+      <stop offset="0.42" stop-color="#000000" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- moving light on torus -->
+    <linearGradient id="torusOuter" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a9e9ff" stop-opacity="0.06"/>
+      <stop offset="0.16" stop-color="#9fe5ff" stop-opacity="0.80"/>
+      <stop offset="0.42" stop-color="#ffffff" stop-opacity="0.92"/>
+      <stop offset="0.66" stop-color="#9bcfff" stop-opacity="0.64"/>
+      <stop offset="0.82" stop-color="#97a2ff" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#97a2ff" stop-opacity="0.04"/>
+      <animateTransform
+        attributeName="gradientTransform"
+        type="rotate"
+        from="0 0.5 0.5"
+        to="360 0.5 0.5"
+        dur="12s"
+        repeatCount="indefinite"/>
     </linearGradient>
 
-    <!-- Noise-ish grain using feTurbulence -->
-    <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" />
-      <feColorMatrix type="matrix" values="
-        1 0 0 0 0
-        0 1 0 0 0
-        0 0 1 0 0
-        0 0 0 0.06 0"/>
-    </filter>
+    <linearGradient id="torusInner" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#9edfff" stop-opacity="0.04"/>
+      <stop offset="0.28" stop-color="#9edfff" stop-opacity="0.72"/>
+      <stop offset="0.58" stop-color="#ffffff" stop-opacity="0.24"/>
+      <stop offset="0.82" stop-color="#8878ff" stop-opacity="0.24"/>
+      <stop offset="1" stop-color="#8878ff" stop-opacity="0.03"/>
+    </linearGradient>
 
-    <!-- Soft bloom / glow -->
-    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="6" result="blur"/>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="7" result="blur"/>
       <feMerge>
         <feMergeNode in="blur"/>
         <feMergeNode in="SourceGraphic"/>
       </feMerge>
     </filter>
 
+    <filter id="wideGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="28"/>
+    </filter>
+
+    <filter id="grain" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="2" stitchTiles="stitch"/>
+      <feColorMatrix type="matrix" values="
+        1 0 0 0 0
+        0 1 0 0 0
+        0 0 1 0 0
+        0 0 0 0.03 0"/>
+    </filter>
+
     <style>
-      /* Subtle movement (no JS) */
-      .floatA { animation: floatA 6.5s ease-in-out infinite; transform-origin: 600px 160px; }
-      .floatB { animation: floatB 8.2s ease-in-out infinite; transform-origin: 600px 160px; }
-      .spin   { animation: spin 10s linear infinite; transform-origin: 600px 160px; }
-      .pulse  { animation: pulse 4.8s ease-in-out infinite; }
+      .floatA { animation: floatA 9s ease-in-out infinite; transform-origin: 1070px 210px; }
+      .floatB { animation: floatB 12s ease-in-out infinite; transform-origin: 1070px 210px; }
+      .pulse  { animation: pulse 6s ease-in-out infinite; }
 
-      @keyframes floatA { 0%,100% { transform: translate(0px, 0px); } 50% { transform: translate(0px, -6px);} }
-      @keyframes floatB { 0%,100% { transform: translate(0px, 0px); } 50% { transform: translate(0px, 5px);} }
-      @keyframes spin   { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg);} }
-      @keyframes pulse  { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
+      .spin {
+        animation: spin 36s linear infinite;
+        transform-origin: 980px 210px;
+      }
 
-      /* Text look */
-      .title { font: 700 34px/1.1 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; letter-spacing: 0.2px; }
-      .sub   { font: 500 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; opacity: 0.82; }
-      .meta  { font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; opacity: 0.70; }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to   { transform: rotate(360deg); }
+      }
+
+      @keyframes floatA {
+        0%,100% { transform: translate(0px, 0px); }
+        50% { transform: translate(8px, -6px); }
+      }
+
+      @keyframes floatB {
+        0%,100% { transform: translate(0px, 0px); }
+        50% { transform: translate(-6px, 6px); }
+      }
+
+      @keyframes pulse {
+        0%,100% { opacity: 0.9; }
+        50% { opacity: 1; }
+      }
+
+      .eyebrow {
+        font: 600 12px/1.2 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .title {
+        font: 700 50px/1.06 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        letter-spacing: -0.035em;
+      }
+
+      .sub {
+        font: 500 17px/1.55 Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      }
+
+      .meta {
+        font: 500 12px/1.4 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        letter-spacing: 0.06em;
+      }
     </style>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="320" fill="url(#bg)"/>
+  <!-- background -->
+  <rect width="1400" height="420" fill="url(#bg)"/>
+  <rect width="1400" height="420" fill="url(#floorFade)"/>
 
-  <!-- Ambient glows -->
-  <g class="floatA">
-    <circle cx="620" cy="150" r="170" fill="url(#glowA)"/>
-  </g>
-  <g class="floatB">
-    <circle cx="560" cy="190" r="190" fill="url(#glowB)"/>
+  <!-- soft ambience -->
+  <g filter="url(#wideGlow)" opacity="0.75">
+    <ellipse cx="1020" cy="210" rx="220" ry="145" fill="#67c8ff" opacity="0.12"/>
+    <ellipse cx="980" cy="235" rx="185" ry="120" fill="#8a72ff" opacity="0.08"/>
+    <ellipse cx="250" cy="85" rx="115" ry="72" fill="#64c3ff" opacity="0.06"/>
   </g>
 
-  <!-- Torus-like “generative” rings (parametric-ish with ellipses) -->
-  <g filter="url(#softGlow)" opacity="0.95">
-    <!-- outer ring -->
-    <g class="spin" opacity="0.55">
-      <ellipse cx="600" cy="165" rx="190" ry="92" fill="none" stroke="url(#torusStroke)" stroke-width="3.5"/>
-      <ellipse cx="600" cy="165" rx="165" ry="78" fill="none" stroke="url(#torusStroke)" stroke-width="2.2" opacity="0.65"/>
+  <rect width="1400" height="420" fill="url(#ambientBlue)"/>
+  <rect width="1400" height="420" fill="url(#ambientViolet)"/>
+
+  <!-- hero torus area -->
+  <g transform="translate(90 0)">
+    <!-- halo -->
+    <g class="floatA" filter="url(#wideGlow)" opacity="0.7">
+      <ellipse cx="980" cy="210" rx="210" ry="112" fill="#72d4ff" opacity="0.18"/>
     </g>
 
-    <!-- inner “knot” feel: offset rings -->
-    <g class="floatA pulse" opacity="0.7">
-      <ellipse cx="600" cy="165" rx="110" ry="54" fill="none" stroke="url(#torusStroke)" stroke-width="2.2"/>
-      <ellipse cx="615" cy="158" rx="128" ry="62" fill="none" stroke="url(#torusStroke)" stroke-width="1.6" opacity="0.65"/>
-      <ellipse cx="585" cy="174" rx="138" ry="66" fill="none" stroke="url(#torusStroke)" stroke-width="1.2" opacity="0.5"/>
+    <!-- back echo -->
+    <g class="floatB" opacity="0.22" filter="url(#softGlow)">
+      <ellipse cx="1008" cy="218" rx="172" ry="76" fill="none" stroke="url(#torusInner)" stroke-width="2.2"/>
     </g>
 
-    <!-- light streaks -->
-    <g opacity="0.45">
-      <path d="M420 170 C520 120, 680 120, 780 170" fill="none" stroke="#A8E7FF" stroke-opacity="0.35" stroke-width="1.5"/>
-      <path d="M440 190 C540 240, 660 240, 760 190" fill="none" stroke="#B7A7FF" stroke-opacity="0.35" stroke-width="1.5"/>
+    <!-- main hero torus -->
+    <g class="pulse spin" filter="url(#softGlow)">
+      <ellipse cx="980" cy="210" rx="188" ry="84" fill="none" stroke="url(#torusOuter)" stroke-width="4.6"/>
+      <ellipse cx="980" cy="210" rx="160" ry="72" fill="none" stroke="url(#torusInner)" stroke-width="2.4" opacity="0.82"/>
+    </g>
+
+    <!-- subtle inner light ring -->
+    <g opacity="0.58" filter="url(#softGlow)">
+      <ellipse cx="980" cy="210" rx="118" ry="52" fill="none" stroke="#dff6ff" stroke-opacity="0.18" stroke-width="1.4"/>
+    </g>
+
+    <!-- soft light traces -->
+    <g opacity="0.26">
+      <path d="M790 212 C860 166, 1080 164, 1166 208" fill="none" stroke="#caefff" stroke-opacity="0.28" stroke-width="1.5"/>
+      <path d="M822 244 C900 282, 1050 282, 1130 236" fill="none" stroke="#9f8dff" stroke-opacity="0.14" stroke-width="1.2"/>
     </g>
   </g>
 
-  <!-- Grain overlay -->
-  <rect width="1200" height="320" filter="url(#grain)" opacity="0.45"/>
+  <!-- text -->
+  <g transform="translate(82 122)">
+    <text class="eyebrow" x="0" y="0" fill="#a8dbff">Immersive Realtime Sculpture</text>
+    <text class="title" x="0" y="64" fill="#eef7ff">Generative Torus Sculpture</text>
+    <text class="sub" x="0" y="112" fill="#d7ebff">
+      Interactive 3D light study with audio-reactive motion,
+    </text>
+    <text class="sub" x="0" y="138" fill="#d7ebff">
+      atmospheric presets, and a gallery-inspired Deep Blue mode.
+    </text>
 
-  <!-- Left text block (minimal, gallery-like) -->
-  <g transform="translate(60 92)">
-    <text class="title" x="0" y="0" fill="#EAF4FF">Generative Torus Sculpture</text>
-    <text class="sub" x="0" y="34" fill="#CFE6FF">Generative Light Sculpture — interactive 3D audio-reactive light study</text>
-    <text class="meta" x="0" y="66" fill="#B8D2FF">Three.js · Instancing · Bloom/Fog · Audio-reactive lighting</text>
+    <g transform="translate(0 184)">
+      <rect x="0" y="-22" width="128" height="34" rx="17" fill="#0d1630" stroke="#4468a8" stroke-opacity="0.5"/>
+      <text class="meta" x="64" y="-1" text-anchor="middle" fill="#e4f2ff">Three.js</text>
+
+      <rect x="142" y="-22" width="150" height="34" rx="17" fill="#0d1630" stroke="#4468a8" stroke-opacity="0.5"/>
+      <text class="meta" x="217" y="-1" text-anchor="middle" fill="#e4f2ff">Audio Reactive</text>
+
+      <rect x="306" y="-22" width="142" height="34" rx="17" fill="#0d1630" stroke="#4468a8" stroke-opacity="0.5"/>
+      <text class="meta" x="377" y="-1" text-anchor="middle" fill="#e4f2ff">Light Study</text>
+    </g>
   </g>
 
-  <!-- A small “badge” on the right -->
-  <g transform="translate(975 56)" opacity="0.9">
-    <rect x="0" y="0" width="165" height="36" rx="18" fill="#0D1630" stroke="#2A4A8A" stroke-opacity="0.6"/>
-    <text x="82.5" y="23" text-anchor="middle" class="meta" fill="#D9E9FF">v1 · study</text>
+  <g transform="translate(1174 52)" opacity="0.92">
+    <rect x="0" y="0" width="148" height="36" rx="18" fill="#0d1630" stroke="#4468a8" stroke-opacity="0.56"/>
+    <text x="74" y="23" text-anchor="middle" class="meta" fill="#dcecff">v1 · project</text>
   </g>
+
+  <rect width="1400" height="420" filter="url(#grain)" opacity="0.3"/>
 </svg>
