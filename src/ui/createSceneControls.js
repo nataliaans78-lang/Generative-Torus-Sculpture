@@ -88,6 +88,7 @@ export function createSceneControls({
   onUploadAudio,
   onResetAll,
 } = {}) {
+  const isMobileViewport = () => window.matchMedia('(max-width: 640px)').matches;
   const hasPresetPicker = presetOptions.length > 1;
   let currentPresetKey = initialPreset;
   const container = document.createElement('div');
@@ -236,7 +237,7 @@ export function createSceneControls({
   const gridCountSlider = createSlider({
     label: 'Grid Count',
     min: gridCountMin,
-    max: gridCountMax,
+    max: Math.min(3, gridCountMax),
     step: 1,
     value: initialGridCount,
     onInput: (value) => onSceneChange?.({ gridCount: value }),
@@ -331,7 +332,7 @@ export function createSceneControls({
       setSectionCollapsed(section, !shouldOpen);
     });
   };
-  const applyPresetUiLayout = (presetKey) => {
+  const applyPresetUiLayout = (_presetKey) => {
     if (isMobile()) return;
     if (!isShortScreen()) return;
     const openIds = ['preset', 'scene'];
@@ -437,6 +438,13 @@ export function createSceneControls({
   sectionQuality.inner.append(qualityPicker);
   qualityButtons.forEach((btn, key) => btn.classList.toggle('is-active', key === initialQuality));
 
+  const updateQualityVisibility = () => {
+    qualityButtons.forEach((btn) => {
+      btn.style.display = 'block';
+    });
+  };
+  updateQualityVisibility();
+
   const toggleSection = (section) => {
     const nextCollapsed = !section.collapsed;
     setSectionCollapsed(section, nextCollapsed);
@@ -470,12 +478,22 @@ export function createSceneControls({
   };
   const setPresetVisibility = () => {
     if (!sectionPreset) return;
-    sectionPreset.wrapper.style.display = isMobile() ? 'none' : 'block';
+    const mobile = isMobileViewport();
+    // On mobile we lock to default preset (handled upstream) and hide the picker.
+    sectionPreset.wrapper.style.display = mobile ? 'none' : 'block';
   };
 
   const applyDefaultSectionState = () => {
-    if (isMobile()) {
-      sections.forEach((section) => setSectionCollapsed(section, true));
+    const mobile = isMobile();
+    // Hide preset picker on mobile, keep scene & quality visible but collapsible.
+    if (sectionPreset) {
+      sectionPreset.wrapper.style.display = mobile ? 'none' : 'block';
+    }
+    if (mobile) {
+      sections.forEach((section) => {
+        if (section === sectionPreset) return;
+        setSectionCollapsed(section, true);
+      });
       return;
     }
     sections.forEach((section) => setSectionCollapsed(section, false));
@@ -549,6 +567,8 @@ export function createSceneControls({
     lastMobileViewport = mobileViewport;
     setPresetVisibility();
     setLightingVisibility(currentPresetKey);
+    applyDefaultSectionState();
+    updateQualityVisibility();
     setPanelCollapsed(panelCollapsed);
     applyPresetUiLayout(currentPresetKey);
     setQualityMenuOpen(!sectionQuality.collapsed && !panelCollapsed);
@@ -582,8 +602,11 @@ export function createSceneControls({
         rotationSlider.setValue(values.globalRotationSpeed);
     },
     setGridCountLimits(limits = {}) {
-      const min = Math.max(1, Math.floor(limits.min ?? gridCountMin));
-      const max = Math.max(min, Math.floor(limits.max ?? gridCountMax));
+      const mobile = isMobile();
+      const min = Math.max(1, Math.floor(limits.min ?? limits.gridMin ?? gridCountMin));
+      const maxMobile = 3; // clamp for mobile
+      const rawMax = Math.max(min, Math.floor(limits.max ?? limits.gridMax ?? gridCountMax));
+      const max = mobile ? Math.min(maxMobile, rawMax) : rawMax;
       gridCountSlider.setRange(min, max);
       const currentValue = gridCountSlider.getValue();
       const clamped = Math.max(min, Math.min(max, currentValue));

@@ -288,8 +288,6 @@ export function createTorusCluster(
     const rotSpeedBaseY = 0.0038 + mid * 0.022 * profileScale;
     const liftBase = 0.0025 + bass * 0.018 * profileScale;
     const pulseScaleAmp = 0.012 + bass * 0.05 * profileScale;
-    const twistAmp = 0.025 + mid * 0.06 * profileScale;
-    const shimmerAmp = high * 0.035;
     const depthSwayAmp = 0.004 + avg * 0.012;
 
     for (let i = 0; i < count; i += 1) {
@@ -315,7 +313,6 @@ export function createTorusCluster(
       const introOffset = Math.sin(elapsed * 0.8 + phase * 0.35) * 0.006;
       const introLift = Math.sin(elapsed * 0.9) * 0.012;
       const introTwist = Math.sin(elapsed * 0.55) * 0.08;
-      const introScale = 1 + Math.sin(elapsed * 1.1) * 0.018;
 
       const randomPulse =
         Math.sin(elapsed * (0.9 + phase * 0.12) + phase * 3.1) * (0.004 + avg * 0.01);

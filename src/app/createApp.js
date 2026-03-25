@@ -858,6 +858,7 @@ export function createApp() {
     ui?.setLightingValues(controlsState.state.lighting);
     ui?.setSceneValues(controlsState.state.scene);
     ui?.setQuality(controlsState.state.quality);
+    ensureMobilePresetTitle(PRESETS[key]?.label ?? key);
     writeStoredState();
   };
 
@@ -954,12 +955,24 @@ export function createApp() {
     },
   });
 
-  if (isMobileDevice()) {
-    const mobilePresetTitle = document.createElement('div');
-    mobilePresetTitle.className = 'portfolio-mobile-preset-title';
-    mobilePresetTitle.textContent = 'Deep Blue';
-    document.body.append(mobilePresetTitle);
-  }
+  let mobilePresetTitle = null;
+  const ensureMobilePresetTitle = (label = PRESETS[defaultPresetKey].label ?? defaultPresetKey) => {
+    if (!isMobileDevice()) {
+      if (mobilePresetTitle) {
+        mobilePresetTitle.remove();
+        mobilePresetTitle = null;
+      }
+      return;
+    }
+    if (!mobilePresetTitle) {
+      mobilePresetTitle = document.createElement('div');
+      mobilePresetTitle.className = 'portfolio-mobile-preset-title';
+      document.body.append(mobilePresetTitle);
+    }
+    mobilePresetTitle.textContent = label;
+  };
+
+  ensureMobilePresetTitle(PRESETS[storedState.preset]?.label ?? PRESETS[defaultPresetKey].label);
 
   const initialPreset = isPresetKey(storedState.preset) ? storedState.preset : defaultPresetKey;
   storedState.preset = initialPreset;
@@ -1002,6 +1015,7 @@ export function createApp() {
     ui?.setLightingValues(controlsState.state.lighting);
     ui?.setSceneValues(controlsState.state.scene);
     ui?.setQuality(desiredQuality);
+    ensureMobilePresetTitle(PRESETS[targetPreset]?.label ?? targetPreset);
     writeStoredState();
   };
   const cameraDrift = new THREE.Vector3();
@@ -1216,6 +1230,9 @@ export function createApp() {
       lastDeviceModeMobile = nextDeviceModeMobile;
       applyModeDefaults(nextDeviceModeMobile);
     }
+    ensureMobilePresetTitle(
+      PRESETS[controlsState.state.presetKey]?.label ?? controlsState.state.presetKey,
+    );
     camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
     applyAdaptivePixelRatio();

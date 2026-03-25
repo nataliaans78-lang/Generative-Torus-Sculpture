@@ -37,6 +37,8 @@ body {
     radial-gradient(120% 120% at 78% 80%, rgba(123, 255, 228, 0.16), transparent 52%),
     linear-gradient(140deg, #030814 0%, #050c1c 40%, #061025 100%);
   overflow: hidden;
+  min-height: 100vh;
+  min-height: 100dvh;
   color: var(--text);
   letter-spacing: 0.01em;
 }
@@ -115,7 +117,7 @@ canvas {
   top: 16px;
   right: 16px;
   width: min(340px, calc(100vw - 28px));
-  max-height: calc(100vh - 12px);
+  max-height: calc(var(--vh, 1vh) * 100 - 12px);
   padding: 46px 16px 16px;
   border-radius: var(--radius-lg);
   background: linear-gradient(160deg, rgba(12, 19, 36, 0.92), rgba(7, 11, 24, 0.9));
@@ -186,7 +188,7 @@ canvas {
   padding-right: 8px;
   padding-bottom: 12px;
   min-height: 0;
-  max-height: calc(100vh - 140px);
+  max-height: calc(var(--vh, 1vh) * 100 - 140px);
   position: relative;
   z-index: 1;
   scrollbar-gutter: stable;
@@ -472,15 +474,16 @@ canvas {
 
 @media (max-width: 768px) {
   .portfolio-controls {
-    width: min(360px, calc(100vw - 24px));
+    width: min(420px, calc(100vw - 20px));
     left: 50%;
     right: auto;
-    bottom: 16px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
     top: auto;
     border-radius: 18px;
     --panel-x: -50%;
-    padding-top: 46px;
-    max-height: min(460px, calc(100vh - 200px));
+    padding-top: 48px;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    max-height: clamp(340px, 64vh, calc(var(--vh, 1vh) * 100 - 120px));
     box-shadow: 0 14px 48px rgba(3, 8, 18, 0.55);
   }
   .ui-section__chevron {
@@ -511,6 +514,9 @@ canvas {
   }
   .qualityMenu.is-open {
     display: grid;
+  }
+  .portfolio-controls__drawer {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -550,26 +556,30 @@ canvas {
 
 @media (max-height: 900px) {
   .portfolio-controls {
-    top: 8px;
-    right: 8px;
+    top: auto;
+    right: auto;
+    left: 50%;
+    bottom: 12px;
+    --panel-x: -50%;
     width: 280px;
-    max-height: calc(100vh - 16px);
-    padding: 32px 10px 10px;
+    max-height: calc(var(--vh, 1vh) * 100 - 24px);
     gap: 6px;
     border-radius: 18px;
     overflow: hidden;
   }
 
   .portfolio-controls__panel-toggle {
-    top: 3px;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
     height: 24px;
-    width: calc(100% - 24px);
+    width: calc(100% - 20px);
   }
 
   .portfolio-controls__drawer {
     flex: 1;
     min-height: 0;
-    max-height: calc(100vh - 78px);
+    max-height: calc(var(--vh, 1vh) * 100 - 78px);
     overflow-y: auto !important;
     overflow-x: hidden;
     padding-right: 6px;

@@ -22,8 +22,8 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   const desktopPresets = {
     [QUALITY_LEVELS.LOW]: {
       level: QUALITY_LEVELS.LOW,
-      tubularSegments: 110,
-      radialSegments: 55,
+      tubularSegments: 105,
+      radialSegments: 64, // podbite, żeby krawędzie były łagodniejsze
       pixelRatioCap: 1,
       shadowsEnabled: false,
       shadowMapSize: 0,
@@ -50,24 +50,24 @@ export function applyQuality(renderer, level, callback, pixelRatio) {
   const mobilePresets = {
     [QUALITY_LEVELS.LOW]: {
       level: QUALITY_LEVELS.LOW,
-      tubularSegments: 100,
-      radialSegments: 50,
+      tubularSegments: 78,
+      radialSegments: 48, // trochę więcej segmentów dla gładszych krawędzi
       pixelRatioCap: 1.0,
       shadowsEnabled: false,
       shadowMapSize: 0,
     },
     [QUALITY_LEVELS.MEDIUM]: {
       level: QUALITY_LEVELS.MEDIUM,
-      tubularSegments: 145,
-      radialSegments: 72,
+      tubularSegments: 120,
+      radialSegments: 60,
       pixelRatioCap: 1.35,
       shadowsEnabled: false,
       shadowMapSize: 512,
     },
     [QUALITY_LEVELS.HIGH]: {
       level: QUALITY_LEVELS.HIGH,
-      tubularSegments: 185,
-      radialSegments: 92,
+      tubularSegments: 160,
+      radialSegments: 80,
       pixelRatioCap: 2.0,
       shadowsEnabled: true,
       shadowMapSize: 1024,

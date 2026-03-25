@@ -5,6 +5,15 @@ import { LANDING_SEEN_STORAGE_KEY } from './config/index.js';
 
 let appStarted = false;
 
+// Keep a reliable viewport height variable for mobile browsers that shrink 100vh
+const setViewportHeightVar = () => {
+  const vh = (window.visualViewport?.height ?? window.innerHeight) * 0.01;
+  document.documentElement.style.setProperty('--vh', `${vh}px`);
+};
+setViewportHeightVar();
+window.addEventListener('resize', setViewportHeightVar, { passive: true });
+window.visualViewport?.addEventListener('resize', setViewportHeightVar, { passive: true });
+
 function startApp() {
   if (appStarted) return;
   appStarted = true;

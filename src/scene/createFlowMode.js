@@ -281,12 +281,6 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
       const s = roomState.radius * wallSpotScales[i] * 0.82;
       wallSpots[i].scale.set(s, s, 1);
     }
-    const violetWeight = state.flowProfile === 'DEEP_BLUE' ? 0.0 : state.flowProfile === 'STRONG' ? 0.8 : 0.45;
-    const accentTarget = new THREE.Color().lerpColors(
-      FLOW_ACCENT_BLUE,
-      FLOW_ACCENT_VIOLET,
-      violetWeight,
-    );
     for (let i = 0; i < SPOT_COUNT; i += 1) {
       spotLights[i].distance = roomState.radius * 3.2;
     }
@@ -404,7 +398,7 @@ export function createFlowMode({ scene, lights, audioAnalyser, isPlaying: _isPla
     const accentTarget = new THREE.Color().lerpColors(
       FLOW_ACCENT_BLUE,
       FLOW_ACCENT_VIOLET,
-      state.flowProfile === 'STRONG' ? 0.3 : 0.48,
+      state.flowProfile === 'STRONG' ? 0.6 : 0.48,
     );
     for (let i = 0; i < SPOT_COUNT; i += 1) {
       const active = i < state.activeSpotCount;
