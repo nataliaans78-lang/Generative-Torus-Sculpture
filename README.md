@@ -61,7 +61,7 @@ The system balances precision and motion — structure and energy.
 - Preserved interaction behaviour with reduced detail  
 
 <p align="center">
-  <img src="public/assets/screenshot/MobileUi.png" alt="Mobile UI" width="220" />
+  <img src="public/assets/screenshot/MobileUi.jpg" alt="Mobile UI" width="220" />
 </p>
 
 ---
