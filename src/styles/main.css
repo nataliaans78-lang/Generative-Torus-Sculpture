@@ -1,16 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Cabinet+Grotesk:wght@400;500;600&display=swap');
 
 :root {
-  --bg-0: #030814;
-  --bg-1: #050c1c;
-  --panel: rgba(9, 14, 28, 0.84);
-  --panel-strong: rgba(9, 14, 28, 0.92);
+  --bg-0: #010101;
+  --bg-1: #020207;
+  --panel: rgba(3, 5, 14, 0.88);
+  --panel-strong: rgba(3, 5, 14, 0.94);
   --border: rgba(255, 255, 255, 0.14);
-  --border-strong: rgba(136, 188, 255, 0.42);
-  --accent: #79f2ff;
-  --accent-2: #9ba7ff;
-  --text: #e8f1ff;
-  --muted: #9db4d8;
+  --border-strong: rgba(138, 99, 233, 0.42);
+  --accent: #76ccfc;
+  --accent-2: #8a63e9;
+  --text: #f3f8ff;
+  --muted: #b6c5de;
   --shadow-soft: 0 18px 60px rgba(2, 6, 15, 0.45);
   --radius-lg: 16px;
   --radius-md: 12px;
@@ -31,11 +31,11 @@ body {
 body {
   font-family: 'Space Grotesk', 'Cabinet Grotesk', system-ui, sans-serif;
   background:
-    radial-gradient(120% 120% at 50% 20%, rgba(80, 165, 255, 0.12), transparent 60%),
+    radial-gradient(120% 120% at 50% 20%, rgba(118, 204, 252, 0.16), transparent 60%),
     radial-gradient(100% 100% at 50% 90%, rgba(0, 0, 0, 0.6), transparent 70%),
-    radial-gradient(120% 120% at 18% 20%, rgba(80, 165, 255, 0.18), transparent 52%),
-    radial-gradient(120% 120% at 78% 80%, rgba(123, 255, 228, 0.16), transparent 52%),
-    linear-gradient(140deg, #030814 0%, #050c1c 40%, #061025 100%);
+    radial-gradient(120% 120% at 18% 20%, rgba(118, 204, 252, 0.24), transparent 52%),
+    radial-gradient(120% 120% at 78% 80%, rgba(138, 99, 233, 0.22), transparent 52%),
+    linear-gradient(140deg, #010101 0%, #020207 44%, #07122e 100%);
   overflow: hidden;
   min-height: 100vh;
   min-height: 100dvh;
@@ -48,8 +48,9 @@ body::before {
   position: fixed;
   inset: -10%;
   pointer-events: none;
-  background: radial-gradient(30% 30% at 50% 10%, rgba(255, 255, 255, 0.06), transparent 60%),
-    radial-gradient(20% 20% at 12% 60%, rgba(90, 191, 255, 0.12), transparent 70%);
+  background: radial-gradient(30% 30% at 50% 10%, rgba(255, 255, 255, 0.1), transparent 60%),
+    radial-gradient(20% 20% at 12% 60%, rgba(118, 204, 252, 0.16), transparent 70%),
+    radial-gradient(18% 18% at 84% 32%, rgba(138, 99, 233, 0.14), transparent 72%);
   mix-blend-mode: screen;
   opacity: 0.8;
   z-index: 0;
@@ -120,8 +121,8 @@ canvas {
   max-height: calc(var(--vh, 1vh) * 100 - 12px);
   padding: 46px 16px 16px;
   border-radius: var(--radius-lg);
-  background: linear-gradient(160deg, rgba(12, 19, 36, 0.92), rgba(7, 11, 24, 0.9));
-  border: 1px solid rgba(146, 192, 255, 0.12);
+  background: linear-gradient(160deg, rgba(6, 10, 24, 0.95), rgba(2, 4, 12, 0.94));
+  border: 1px solid rgba(118, 204, 252, 0.14);
   box-shadow: var(--shadow-soft), 0 0 0 1px rgba(255, 255, 255, 0.015) inset;
   display: flex;
   flex-direction: column;
@@ -145,8 +146,8 @@ canvas {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(55% 55% at 20% 0%, rgba(95, 196, 255, 0.16), transparent 60%),
-    radial-gradient(48% 48% at 90% 16%, rgba(123, 255, 228, 0.12), transparent 60%);
+  background: radial-gradient(55% 55% at 20% 0%, rgba(118, 204, 252, 0.18), transparent 60%),
+    radial-gradient(48% 48% at 90% 16%, rgba(138, 99, 233, 0.16), transparent 60%);
   opacity: 0.9;
   pointer-events: none;
 }
@@ -164,7 +165,7 @@ canvas {
   align-items: center;
   justify-content: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  background: linear-gradient(180deg, rgba(13, 20, 36, 0.95), rgba(11, 16, 28, 0.9));
+  background: linear-gradient(180deg, rgba(8, 14, 32, 0.97), rgba(3, 6, 17, 0.94));
   color: var(--text);
   cursor: pointer;
   z-index: 8;
@@ -213,7 +214,7 @@ canvas {
 .portfolio-controls__section {
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
-  background: linear-gradient(180deg, rgba(8, 12, 26, 0.9), rgba(7, 10, 22, 0.82));
+  background: linear-gradient(180deg, rgba(6, 10, 24, 0.94), rgba(3, 5, 14, 0.9));
   box-shadow: 0 12px 34px rgba(2, 8, 16, 0.36);
   overflow: hidden;
   position: relative;
@@ -228,7 +229,7 @@ canvas {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(60% 40% at 50% -10%, rgba(124, 255, 214, 0.16), transparent 55%);
+  background: radial-gradient(60% 40% at 50% -10%, rgba(138, 99, 233, 0.22), transparent 55%);
   opacity: 0.6;
 }
 
@@ -286,7 +287,7 @@ canvas {
 .portfolio-controls__select {
   border-radius: var(--radius-sm);
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: linear-gradient(180deg, rgba(12, 18, 34, 0.95), rgba(11, 18, 36, 0.9));
+  background: linear-gradient(180deg, rgba(7, 13, 30, 0.97), rgba(3, 7, 19, 0.93));
   color: var(--text);
   padding: 9px 11px;
   font: inherit;
@@ -306,8 +307,8 @@ canvas {
 
 .portfolio-controls__button:hover,
 .portfolio-controls__select:hover {
-  border-color: rgba(121, 242, 255, 0.7);
-  box-shadow: 0 12px 22px rgba(13, 45, 74, 0.34);
+  border-color: rgba(118, 204, 252, 0.72);
+  box-shadow: 0 12px 22px rgba(18, 46, 92, 0.34);
 }
 
 .portfolio-controls__button:active {
@@ -321,10 +322,10 @@ canvas {
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  background: radial-gradient(110% 110% at 30% 20%, rgba(121, 242, 255, 0.26), transparent 62%),
-    linear-gradient(180deg, rgba(14, 34, 46, 0.95), rgba(8, 18, 32, 0.95));
-  border-color: rgba(121, 242, 255, 0.65);
-  box-shadow: 0 0 0 1px rgba(121, 242, 255, 0.35) inset;
+  background: radial-gradient(110% 110% at 30% 20%, rgba(118, 204, 252, 0.3), transparent 62%),
+    linear-gradient(180deg, rgba(20, 34, 92, 0.96), rgba(6, 12, 30, 0.95));
+  border-color: rgba(118, 204, 252, 0.68);
+  box-shadow: 0 0 0 1px rgba(118, 204, 252, 0.35) inset;
 }
 
 .qualityMenu {
@@ -371,9 +372,9 @@ canvas {
 }
 
 .qualityOption:hover {
-  border-color: rgba(188, 213, 255, 0.7);
-  background: rgba(22, 35, 64, 0.94);
-  box-shadow: 0 10px 24px rgba(11, 25, 48, 0.4);
+  border-color: rgba(138, 99, 233, 0.74);
+  background: rgba(26, 28, 70, 0.94);
+  box-shadow: 0 10px 24px rgba(25, 19, 68, 0.4);
 }
 
 .qualityOption:active {
@@ -381,12 +382,12 @@ canvas {
 }
 
 .qualityOption.is-active {
-  border-color: rgba(191, 216, 255, 0.9);
-  background: linear-gradient(160deg, rgba(121, 242, 255, 0.28), rgba(58, 92, 168, 0.8));
+  border-color: rgba(255, 255, 255, 0.88);
+  background: linear-gradient(160deg, rgba(118, 204, 252, 0.3), rgba(138, 99, 233, 0.84));
   color: #f5f9ff;
   box-shadow:
-    inset 0 0 0 1px rgba(198, 219, 255, 0.32),
-    0 14px 28px rgba(39, 77, 132, 0.45);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.26),
+    0 14px 28px rgba(44, 33, 110, 0.45);
 }
 
 .portfolio-preset-hud {
@@ -439,16 +440,16 @@ canvas {
 
 .portfolio-preset-hud__button:hover {
   transform: translateY(-1px);
-  border-color: rgba(121, 242, 255, 0.34);
+  border-color: rgba(118, 204, 252, 0.38);
   color: rgba(255, 255, 255, 0.96);
-  background: rgba(11, 18, 34, 0.58);
+  background: rgba(9, 18, 39, 0.62);
 }
 
 .portfolio-preset-hud__button.is-active {
   border-color: rgba(121, 242, 255, 0.58);
   background:
-    linear-gradient(180deg, rgba(121, 242, 255, 0.14), rgba(155, 167, 255, 0.08)),
-    rgba(11, 18, 34, 0.72);
+    linear-gradient(180deg, rgba(118, 204, 252, 0.16), rgba(138, 99, 233, 0.14)),
+    rgba(6, 11, 25, 0.8);
   color: #f5fbff;
   box-shadow:
     0 0 0 1px rgba(121, 242, 255, 0.08) inset,
@@ -457,7 +458,7 @@ canvas {
 
 .portfolio-preset-hud__button:focus-visible {
   outline: none;
-  border-color: rgba(121, 242, 255, 0.72);
+  border-color: rgba(118, 204, 252, 0.74);
   box-shadow:
     0 0 0 2px rgba(121, 242, 255, 0.16),
     0 10px 24px rgba(8, 20, 34, 0.22);
@@ -484,9 +485,9 @@ canvas {
 .qualityOption:focus-visible,
 .portfolio-controls__slider input[type='range']:focus-visible {
   outline: none;
-  border-color: rgba(121, 242, 255, 0.8);
+  border-color: rgba(118, 204, 252, 0.82);
   box-shadow:
-    0 0 0 2px rgba(121, 242, 255, 0.18),
+    0 0 0 2px rgba(118, 204, 252, 0.18),
     0 10px 24px rgba(8, 24, 42, 0.28);
 }
 
@@ -543,7 +544,7 @@ canvas {
   appearance: none;
   height: 8px;
   border-radius: 999px;
-  background: linear-gradient(90deg, rgba(121, 242, 255, 0.9), rgba(80, 138, 255, 0.65));
+  background: linear-gradient(90deg, rgba(90, 180, 238, 0.96), rgba(254, 254, 254, 0.9), rgba(138, 99, 233, 0.82));
   position: relative;
   outline: none;
 }
@@ -657,7 +658,7 @@ canvas {
     overflow-x: hidden;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 10px;
-    background: rgba(10, 17, 33, 0.9);
+    background: rgba(7, 14, 31, 0.92);
     padding: 6px;
     z-index: auto;
   }

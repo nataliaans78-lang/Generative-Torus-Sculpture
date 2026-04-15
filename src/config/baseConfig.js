@@ -1,7 +1,7 @@
 export const BASE_CONFIG = Object.freeze({
   visual: {
-    background: 0x050816,
-    fogColor: 0x0b1020,
+    background: 0x010101,
+    fogColor: 0x020207,
     fogDensity: 0.018,
     bloomStrength: 1.2,
   },

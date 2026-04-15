@@ -8,30 +8,30 @@ export const CAMERA_SETTINGS = {
 
 export const SCENE_SETTINGS = {
   backgroundGradient: {
-    topColor: '#050914',
-    middleColor: '#04112a',
-    bottomColor: '#0a2147',
+    topColor: '#010101',
+    middleColor: '#020207',
+    bottomColor: '#0f185e',
   },
 };
 
 export const LIGHT_SETTINGS = {
   key: {
-    color: 0x7fa8ff,
+    color: 0x76ccfc,
     intensity: 3.4,
     position: [4.4, 5.2, 3.6],
   },
   rim: {
-    color: 0x9ecbff,
+    color: 0xfefefe,
     intensity: 2.3,
     position: [-4.8, 2.8, -5.6],
   },
   fill: {
-    color: 0x5f7fc6,
+    color: 0x8a63e9,
     intensity: 1.2,
     position: [0.8, 1.4, 2.6],
   },
   center: {
-    color: 0xa8c4ff,
+    color: 0x94e0fe,
     intensity: 10,
     position: [1.8, 3.2, 1.4],
     target: [0.95, -0.2, 0.05],
@@ -41,7 +41,7 @@ export const LIGHT_SETTINGS = {
     decay: 2,
   },
   edge: {
-    color: 0x7fb4ff,
+    color: 0x8a63e9,
     intensity: 0.95,
     distance: 24,
     decay: 2,
@@ -68,7 +68,7 @@ export const MATERIAL_SETTINGS = {
   transparent: false,
   depthWrite: true,
   color: 0xffffff,
-  emissive: 0x0a2a66,
+  emissive: 0x0f185e,
   emissiveIntensity: 0.1,
   stripeTextureSize: 1024,
   stripeRepeatX: 1,

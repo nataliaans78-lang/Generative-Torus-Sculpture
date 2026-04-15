@@ -16,13 +16,13 @@ export const PRESETS = Object.freeze({
       spotFocus: 0.5,
     }),
     room: Object.freeze({
-      color: 0x060c18,
+      color: 0x03050e,
       emissiveIntensity: 0.29,
       backgroundColor: null,
     }),
     fog: Object.freeze({
       enabled: true,
-      color: 0x050814,
+      color: 0x020207,
       mode: 'linear',
       density: 0,
       near: 8,
@@ -54,13 +54,13 @@ export const PRESETS = Object.freeze({
       spotFocus: 1.0,
     }),
     room: Object.freeze({
-      color: 0x060c18,
+      color: 0x03050e,
       emissiveIntensity: 0.32,
       backgroundColor: null,
     }),
     fog: Object.freeze({
       enabled: true,
-      color: 0x050814,
+      color: 0x020207,
       mode: 'linear',
       density: 0,
       near: 12,
@@ -92,13 +92,13 @@ export const PRESETS = Object.freeze({
       spotFocus: 0.92,
     }),
     room: Object.freeze({
-      color: 0x060c18,
+      color: 0x03050e,
       emissiveIntensity: 0.3,
       backgroundColor: null,
     }),
     fog: Object.freeze({
       enabled: true,
-      color: 0x050814,
+      color: 0x020207,
       mode: 'linear',
       density: 0,
       near: 10,

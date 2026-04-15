@@ -6,9 +6,9 @@ const TEMP_QUATERNION = new THREE.Quaternion();
 const TEMP_VECTOR = new THREE.Vector3();
 const TEMP_EULER = new THREE.Euler();
 const TEMP_SCALE = new THREE.Vector3();
-const ROW_COLOR_BOTTOM = new THREE.Color(0x3b79ff);
-const ROW_COLOR_MIDDLE = new THREE.Color(0x9652ff);
-const ROW_COLOR_TOP = new THREE.Color(0x72dbff);
+const ROW_COLOR_BOTTOM = new THREE.Color(0x5ab4ee);
+const ROW_COLOR_MIDDLE = new THREE.Color(0xfefefe);
+const ROW_COLOR_TOP = new THREE.Color(0x8a63e9);
 const GLOBAL_OBJECT_BRIGHTNESS = 1.5;
 
 function hash(seed) {

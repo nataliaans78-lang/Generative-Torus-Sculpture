@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 export function createLights(scene, settings) {
   const ambientBase = 0.22;
-  const ambientLight = new THREE.AmbientLight(0x293d9b, ambientBase);
+  const ambientLight = new THREE.AmbientLight(0x0f185e, ambientBase);
   scene.add(ambientLight);
 
   const keyLight = new THREE.DirectionalLight(settings.key.color, settings.key.intensity);
@@ -17,19 +17,19 @@ export function createLights(scene, settings) {
   fillLight.position.set(...settings.fill.position);
   scene.add(fillLight);
 
-  const deepBlueAccentBlue = new THREE.PointLight(0x60a5fa, 0, 18, 2);
+  const deepBlueAccentBlue = new THREE.PointLight(0x76ccfc, 0, 18, 2);
   deepBlueAccentBlue.position.set(4.4, 2.2, 3.2);
   scene.add(deepBlueAccentBlue);
 
-  const deepBlueAccentViolet = new THREE.PointLight(0x4a3cff, 0, 18, 2);
+  const deepBlueAccentViolet = new THREE.PointLight(0x8a63e9, 0, 18, 2);
   deepBlueAccentViolet.position.set(-4.2, 1.8, -3.1);
   scene.add(deepBlueAccentViolet);
 
   // subtle wall accents for Deep Blue
   // Deep Blue wall spots placeholders (kept off)
-  const deepWallLeft = new THREE.SpotLight(0x66b5ff, 0, 18, Math.PI / 2.4, 0.5, 2);
+  const deepWallLeft = new THREE.SpotLight(0x76ccfc, 0, 18, Math.PI / 2.4, 0.5, 2);
   deepWallLeft.name = 'deepWallLeft';
-  const deepWallRight = new THREE.SpotLight(0x66b5ff, 0, 18, Math.PI / 2.4, 0.5, 2);
+  const deepWallRight = new THREE.SpotLight(0x76ccfc, 0, 18, Math.PI / 2.4, 0.5, 2);
   deepWallRight.name = 'deepWallRight';
   deepWallLeft.position.set(-6.0, 1.1, 0.7);
   deepWallRight.position.set(6.0, 1.1, -0.7);
@@ -53,7 +53,7 @@ export function createLights(scene, settings) {
   const centerAngle = settings.center?.angle ?? Math.PI / 8;
   const centerPenumbra = settings.center?.penumbra ?? 0.48;
   const centerLight = new THREE.SpotLight(
-    settings.center?.color ?? 0x8fb6ff,
+    settings.center?.color ?? 0x94e0fe,
     settings.center?.intensity ?? 0,
     centerDistance,
     centerAngle,
@@ -70,7 +70,7 @@ export function createLights(scene, settings) {
   const edgeDistance = settings.edge?.distance ?? 24;
   const edgeDecay = settings.edge?.decay ?? 2;
   const edgeBaseIntensity = settings.edge?.intensity ?? 0.95;
-  const edgeColor = settings.edge?.color ?? 0x7fb4ff;
+  const edgeColor = settings.edge?.color ?? 0x8a63e9;
   const edgeAngle = settings.edge?.angle ?? Math.PI / 6;
   const edgePenumbra = settings.edge?.penumbra ?? 0.5;
   const topEdgeLight = new THREE.SpotLight(
