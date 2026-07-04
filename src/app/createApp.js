@@ -932,15 +932,23 @@ export function createApp() {
     onPlayToggle: () => {
       markInteracted();
       if (!audio) return false;
-      if (audio.audio.isPlaying || audio.hasPendingPlay()) {
+      if (audio.isPlaying() || audio.hasPendingPlay()) {
         audio.pause();
         writeAudioPlaybackState(false, audio.getCurrentTime?.() ?? 0);
         ui.setPlayState(false);
         return false;
       }
-      const started = audio.play();
+      const playResult = audio.play();
+      const started = playResult !== false;
       writeAudioPlaybackState(started, audio.getCurrentTime?.() ?? 0);
       ui.setPlayState(started);
+      if (playResult && typeof playResult.then === 'function') {
+        void playResult.then((playing) => {
+          if (playing || audio.isPlaying() || audio.hasPendingPlay()) return;
+          writeAudioPlaybackState(false, audio.getCurrentTime?.() ?? 0);
+          ui.setPlayState(false);
+        });
+      }
       return started;
     },
     onUploadAudio: async (file) => {
@@ -1303,6 +1311,7 @@ export function createApp() {
     window.removeEventListener('resize', handleResize);
     window.removeEventListener('beforeunload', handleBeforeUnload);
     controls.dispose?.();
+    audio?.dispose?.();
     ui?.dispose?.();
   };
 
