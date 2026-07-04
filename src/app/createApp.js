@@ -1039,7 +1039,7 @@ export function createApp() {
   };
   window.addEventListener('pointerdown', introExitHandler, { passive: true });
   window.addEventListener('keydown', introExitHandler, { passive: true });
-  setTimeout(endIntroMode, 6000);
+  const introTimeoutId = window.setTimeout(endIntroMode, 6000);
   const applyModeDefaults = (isMobile) => {
     const targetPreset = defaultPresetKey;
     const desiredQuality = isMobile
@@ -1139,7 +1139,10 @@ export function createApp() {
     }
   };
 
+  let animationFrameId = null;
+  let disposed = false;
   const animate = () => {
+    if (disposed) return;
     const deltaTime = Math.min(clock.getDelta(), 0.05); // clamp to avoid huge jumps after tab idle
     const elapsed = clock.getElapsedTime();
     startupBlend = Math.min(startupBlend + deltaTime / 0.9, 1);
@@ -1248,21 +1251,19 @@ export function createApp() {
       writeAudioPlaybackState(true, audio.getCurrentTime?.() ?? 0);
       lastAudioStatePersistAt = elapsed;
     }
-    requestAnimationFrame(animate);
+    animationFrameId = requestAnimationFrame(animate);
   };
-  requestAnimationFrame(animate);
+  animationFrameId = requestAnimationFrame(animate);
 
-  window.addEventListener('beforeunload', () => {
-    window.removeEventListener('pointerdown', handlePointerDown);
-    window.removeEventListener('pointermove', handlePointerMove);
-    window.removeEventListener('pointerup', handlePointerUp);
-    window.removeEventListener('pointercancel', handlePointerUp);
-    window.removeEventListener('pointerleave', handlePointerLeave);
+  const persistAudioPlaybackState = () => {
     if (!audio) return;
     writeAudioPlaybackState(audio.isPlaying(), audio.getCurrentTime?.() ?? 0);
-  });
+  };
+  const handleBeforeUnload = () => {
+    persistAudioPlaybackState();
+  };
 
-  window.addEventListener('resize', () => {
+  const handleResize = () => {
     sizes.width = window.innerWidth;
     sizes.height = window.innerHeight;
     const nextDeviceModeMobile = isMobileDevice();
@@ -1278,7 +1279,32 @@ export function createApp() {
     applyAdaptivePixelRatio();
     renderer.setSize(sizes.width, sizes.height);
     postprocessing.setSize(sizes.width, sizes.height);
-  });
+  };
 
-  return { scene, camera, renderer, controls };
+  window.addEventListener('beforeunload', handleBeforeUnload);
+  window.addEventListener('resize', handleResize);
+
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    persistAudioPlaybackState();
+    if (animationFrameId !== null) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    window.clearTimeout(introTimeoutId);
+    window.removeEventListener('pointerdown', handlePointerDown);
+    window.removeEventListener('pointermove', handlePointerMove);
+    window.removeEventListener('pointerup', handlePointerUp);
+    window.removeEventListener('pointercancel', handlePointerUp);
+    window.removeEventListener('pointerleave', handlePointerLeave);
+    window.removeEventListener('pointerdown', introExitHandler);
+    window.removeEventListener('keydown', introExitHandler);
+    window.removeEventListener('resize', handleResize);
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+    controls.dispose?.();
+    ui?.dispose?.();
+  };
+
+  return { scene, camera, renderer, controls, dispose };
 }
