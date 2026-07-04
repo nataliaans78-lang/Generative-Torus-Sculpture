@@ -134,6 +134,13 @@ function createSection({ id, title }) {
   return { wrapper, header, content, inner, collapsed: false };
 }
 
+function setInert(element, inert) {
+  if ('inert' in element) {
+    element.inert = inert;
+  }
+  element.toggleAttribute('inert', inert);
+}
+
 export function createSceneControls({
   initialPreset = 'DEEP_BLUE',
   presetOptions = [],
@@ -395,6 +402,7 @@ export function createSceneControls({
     qualityMenuOpen = false;
     qualityMenu.classList.remove('is-open');
     qualityMenu.setAttribute('aria-hidden', 'true');
+    setInert(qualityMenu, true);
     qualityToggle.setAttribute('aria-expanded', 'false');
     detachGlobalQualityHandlers();
   };
@@ -429,6 +437,7 @@ export function createSceneControls({
     qualityMenuOpen = Boolean(open);
     qualityMenu.classList.toggle('is-open', qualityMenuOpen);
     qualityMenu.setAttribute('aria-hidden', qualityMenuOpen ? 'false' : 'true');
+    setInert(qualityMenu, !qualityMenuOpen);
     qualityToggle.setAttribute(
       'aria-expanded',
       isMobile() && qualityMenuOpen ? 'true' : 'false',
@@ -456,6 +465,8 @@ export function createSceneControls({
       collapsed ? 'Show controls panel' : 'Hide controls panel',
     );
     panelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    drawer.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+    setInert(drawer, collapsed);
     if (collapsed) {
       sections.forEach((section) => setSectionCollapsed(section, true));
       forceCloseQualityMenu();
@@ -483,6 +494,7 @@ export function createSceneControls({
     section.content.style.opacity = collapsed ? '0' : '1';
     section.header.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
     section.content.setAttribute('aria-hidden', collapsed ? 'true' : 'false');
+    setInert(section.content, collapsed);
   };
 
   qualityOptions.forEach((value) => {
