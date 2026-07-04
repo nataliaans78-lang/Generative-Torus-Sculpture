@@ -880,6 +880,7 @@ export function createApp() {
   };
 
   let ui = null;
+  let audioUploadToken = 0;
   const handlePresetChange = (key) => {
     storedState.preset = key;
     applyPreset(key);
@@ -945,14 +946,23 @@ export function createApp() {
     onUploadAudio: async (file) => {
       markInteracted();
       if (!audio || !file) return;
-      const objectUrl = URL.createObjectURL(file);
-      ui.setPlayState(false);
-      await audio.setFile(objectUrl, true, true);
-      const isAudioActive = audio.isPlaying() || audio.hasPendingPlay();
-      writeAudioPlaybackState(false, 0);
-      ui.setPlayState(isAudioActive);
+      const uploadToken = ++audioUploadToken;
+      try {
+        const objectUrl = URL.createObjectURL(file);
+        ui.setPlayState(false);
+        await audio.setFile(objectUrl, true, true);
+        if (uploadToken !== audioUploadToken) return;
+        const isAudioActive = audio.isPlaying() || audio.hasPendingPlay();
+        writeAudioPlaybackState(false, 0);
+        ui.setPlayState(isAudioActive);
+      } catch {
+        if (uploadToken !== audioUploadToken) return;
+        writeAudioPlaybackState(false, 0);
+        ui.setPlayState(false);
+      }
     },
     onResetAll: async () => {
+      audioUploadToken += 1;
       STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
       markInteracted();
       autoQualityEnabled = true;
