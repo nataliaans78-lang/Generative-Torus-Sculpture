@@ -702,7 +702,7 @@ export function createSceneControls({
   };
 
   window.addEventListener('keydown', onWindowKeyDown);
-  window.addEventListener('resize', () => {
+  const onWindowResize = () => {
     const mobileViewport = isMobile();
     if (mobileViewport && !lastMobileViewport) {
       panelCollapsed = true;
@@ -716,7 +716,19 @@ export function createSceneControls({
     applyDefaultSectionState();
     updateQualityVisibility();
     setPanelCollapsed(panelCollapsed);
-  });
+  };
+  window.addEventListener('resize', onWindowResize);
+
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    window.removeEventListener('keydown', onWindowKeyDown);
+    window.removeEventListener('resize', onWindowResize);
+    detachGlobalQualityHandlers();
+    presetHud?.element.remove();
+    container.remove();
+  };
 
   return {
     setPreset(key) {
@@ -761,5 +773,6 @@ export function createSceneControls({
       playButton.textContent = isPlaying ? PAUSE_ICON : PLAY_ICON;
     },
     resetPanel,
+    dispose,
   };
 }
