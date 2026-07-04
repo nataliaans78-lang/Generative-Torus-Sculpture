@@ -15,54 +15,182 @@ export function createFileAudio({
     return null;
   }
 
+  const mediaElement = document.createElement('audio');
+  mediaElement.preload = 'none';
+  mediaElement.crossOrigin = 'anonymous';
+  mediaElement.loop = Boolean(loop);
+  mediaElement.volume = THREE.MathUtils.clamp(volume, 0, 1);
+
   const audio = new THREE.Audio(listener);
-  audio.setVolume(volume);
+  audio.setVolume(1);
   audio.setLoop(loop);
-  const loader = new THREE.AudioLoader();
+  if (typeof audio.setMediaElementSource === 'function') {
+    audio.setMediaElementSource(mediaElement);
+  } else {
+    audio.setNodeSource(audio.context.createMediaElementSource(mediaElement));
+  }
+
   const analyser = new THREE.AudioAnalyser(audio, 256);
   analyser.analyser.fftSize = 256;
 
   const state = {
-    bufferUrl: url,
+    bufferUrl: null,
     isLoaded: false,
     isLoading: false,
     pendingPlay: false,
     loadToken: 0,
+    playToken: 0,
     offsetSeconds: 0,
-    offsetAtPlay: 0,
-    playStartContextTime: 0,
+  };
+  let activeObjectUrl = null;
+  let disposed = false;
+
+  const revokeObjectUrl = (objectUrl) => {
+    if (!objectUrl) return;
+    URL.revokeObjectURL(objectUrl);
   };
 
-  const resolveOffset = (seconds = 0) => {
-    const duration = audio.buffer?.duration ?? 0;
-    if (!Number.isFinite(seconds) || seconds < 0) return 0;
-    if (!duration || duration <= 0) return seconds;
-    if (audio.getLoop()) {
-      return seconds % duration;
+  const applyOffset = () => {
+    if (mediaElement.readyState < HTMLMediaElement.HAVE_METADATA) return;
+    let offset = state.offsetSeconds;
+    const duration = mediaElement.duration;
+    if (Number.isFinite(duration) && duration > 0) {
+      offset = mediaElement.loop ? offset % duration : Math.min(offset, duration);
     }
-    return Math.min(seconds, duration);
+    try {
+      mediaElement.currentTime = offset;
+      state.offsetSeconds = offset;
+    } catch {
+      // The browser will retry after metadata becomes seekable.
+    }
   };
 
-  const getCurrentTime = () => {
-    if (!state.isLoaded) {
-      return state.offsetSeconds;
-    }
-    if (!audio.isPlaying) {
-      return state.offsetSeconds;
-    }
-    const elapsed = Math.max(0, (audio.context?.currentTime ?? 0) - state.playStartContextTime);
-    return resolveOffset(state.offsetAtPlay + elapsed);
-  };
-
-  const prepareFile = (nextUrl, startOffsetSeconds = 0) => {
+  const assignSource = (nextUrl, startOffsetSeconds = 0, ownsObjectUrl = false) => {
     state.loadToken += 1;
+    state.playToken += 1;
     state.bufferUrl = nextUrl || null;
     state.isLoaded = false;
     state.isLoading = false;
     state.pendingPlay = false;
     state.offsetSeconds = Math.max(0, startOffsetSeconds);
-    state.offsetAtPlay = state.offsetSeconds;
-    state.playStartContextTime = 0;
+    mediaElement.pause();
+    audio.isPlaying = false;
+
+    const previousObjectUrl = activeObjectUrl;
+    activeObjectUrl = ownsObjectUrl ? nextUrl : null;
+    if (nextUrl) {
+      mediaElement.src = nextUrl;
+    } else {
+      mediaElement.removeAttribute('src');
+    }
+    if (previousObjectUrl && previousObjectUrl !== activeObjectUrl) {
+      revokeObjectUrl(previousObjectUrl);
+    }
+  };
+
+  const onLoadedMetadata = () => {
+    if (disposed) return;
+    state.isLoaded = true;
+    applyOffset();
+  };
+  const onCanPlay = () => {
+    if (disposed) return;
+    state.isLoaded = true;
+    state.isLoading = false;
+  };
+  const onPlaying = () => {
+    if (disposed) return;
+    state.isLoaded = true;
+    state.isLoading = false;
+    state.pendingPlay = false;
+    audio.isPlaying = true;
+  };
+  const onPause = () => {
+    audio.isPlaying = false;
+  };
+  const onEnded = () => {
+    audio.isPlaying = false;
+    state.pendingPlay = false;
+  };
+  const onError = () => {
+    if (disposed) return;
+    state.isLoaded = false;
+    state.isLoading = false;
+    state.pendingPlay = false;
+    audio.isPlaying = false;
+    if (activeObjectUrl) {
+      const failedObjectUrl = activeObjectUrl;
+      activeObjectUrl = null;
+      state.bufferUrl = null;
+      mediaElement.removeAttribute('src');
+      revokeObjectUrl(failedObjectUrl);
+    }
+  };
+
+  mediaElement.addEventListener('loadedmetadata', onLoadedMetadata);
+  mediaElement.addEventListener('canplay', onCanPlay);
+  mediaElement.addEventListener('playing', onPlaying);
+  mediaElement.addEventListener('pause', onPause);
+  mediaElement.addEventListener('ended', onEnded);
+  mediaElement.addEventListener('error', onError);
+
+  const prepareFile = (nextUrl, startOffsetSeconds = 0) => {
+    assignSource(nextUrl, startOffsetSeconds, false);
+  };
+
+  const play = () => {
+    if (disposed || !state.bufferUrl) return false;
+
+    const playToken = ++state.playToken;
+    state.pendingPlay = true;
+    state.isLoading = mediaElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA;
+    applyOffset();
+
+    if (audio.context?.state === 'suspended') {
+      try {
+        const resumeResult = audio.context.resume();
+        resumeResult?.catch?.(() => {});
+      } catch {
+        // mediaElement.play() below reports whether playback can start.
+      }
+    }
+
+    let playResult;
+    try {
+      playResult = mediaElement.play();
+    } catch {
+      if (playToken === state.playToken) {
+        state.pendingPlay = false;
+        state.isLoading = false;
+        audio.isPlaying = false;
+      }
+      return Promise.resolve(false);
+    }
+
+    if (!playResult || typeof playResult.then !== 'function') {
+      state.pendingPlay = false;
+      state.isLoading = false;
+      audio.isPlaying = !mediaElement.paused;
+      return Promise.resolve(audio.isPlaying);
+    }
+
+    return playResult
+      .then(() => {
+        if (playToken !== state.playToken || disposed) return false;
+        state.pendingPlay = false;
+        state.isLoading = false;
+        state.isLoaded = true;
+        audio.isPlaying = !mediaElement.paused;
+        return audio.isPlaying;
+      })
+      .catch(() => {
+        if (playToken === state.playToken && !disposed) {
+          state.pendingPlay = false;
+          state.isLoading = false;
+          audio.isPlaying = false;
+        }
+        return false;
+      });
   };
 
   const setFile = (
@@ -71,121 +199,60 @@ export function createFileAudio({
     revokeOnLoad = false,
     startOffsetSeconds = 0,
   ) => {
-    if (!nextUrl) {
+    if (!nextUrl || disposed) {
       return Promise.resolve({ loaded: false, playing: false });
     }
-    state.loadToken += 1;
-    const token = state.loadToken;
-    state.isLoading = true;
-    state.isLoaded = false;
-    state.pendingPlay = playWhenReady;
-    state.offsetSeconds = Math.max(0, startOffsetSeconds);
-    state.offsetAtPlay = state.offsetSeconds;
-    state.playStartContextTime = 0;
-    if (audio.isPlaying) {
-      audio.stop();
+    assignSource(nextUrl, startOffsetSeconds, revokeOnLoad);
+    const loadToken = state.loadToken;
+    if (!playWhenReady) {
+      return Promise.resolve({ loaded: state.isLoaded, playing: false });
     }
-    if (typeof audio.offset === 'number') {
-      audio.offset = 0;
+    const playResult = play();
+    if (playResult === false) {
+      return Promise.resolve({ loaded: false, playing: false });
     }
-    let urlReleased = false;
-    const releaseUrl = () => {
-      if (!revokeOnLoad || urlReleased) return;
-      URL.revokeObjectURL(nextUrl);
-      urlReleased = true;
-    };
-    return new Promise((resolve) => {
-      const handleError = () => {
-        releaseUrl();
-        if (token !== state.loadToken) {
-          resolve({ loaded: false, playing: audio.isPlaying });
-          return;
-        }
-        state.isLoading = false;
-        state.isLoaded = false;
-        state.pendingPlay = false;
-        state.bufferUrl = null;
-        resolve({ loaded: false, playing: false });
-      };
-      const handleLoad = (buffer) => {
-        if (token !== state.loadToken) {
-          releaseUrl();
-          resolve({ loaded: false, playing: audio.isPlaying });
-          return;
-        }
-        try {
-          audio.setBuffer(buffer);
-          if (typeof audio.offset === 'number') {
-            audio.offset = resolveOffset(state.offsetSeconds);
-          }
-          state.offsetSeconds = resolveOffset(state.offsetSeconds);
-          state.isLoaded = true;
-          state.isLoading = false;
-          if (state.pendingPlay) {
-            if (audio.context?.state === 'suspended') {
-              audio.context.resume();
-            }
-            state.offsetAtPlay = state.offsetSeconds;
-            state.playStartContextTime = audio.context?.currentTime ?? 0;
-            audio.play();
-            state.pendingPlay = false;
-          }
-          releaseUrl();
-          resolve({ loaded: true, playing: audio.isPlaying });
-        } catch {
-          handleError();
-        }
-      };
-      state.bufferUrl = nextUrl;
-      try {
-        loader.load(nextUrl, handleLoad, undefined, handleError);
-      } catch {
-        handleError();
-      }
-    });
-  };
-
-  const play = () => {
-    if (state.isLoaded) {
-      if (!audio.isPlaying) {
-        if (audio.context?.state === 'suspended') {
-          audio.context.resume();
-        }
-        state.offsetSeconds = resolveOffset(state.offsetSeconds);
-        if (typeof audio.offset === 'number') {
-          audio.offset = state.offsetSeconds;
-        }
-        state.offsetAtPlay = state.offsetSeconds;
-        state.playStartContextTime = audio.context?.currentTime ?? 0;
-        audio.play();
-      }
-      state.pendingPlay = false;
-      return true;
-    }
-    if (state.isLoading) {
-      state.pendingPlay = true;
-      return true;
-    }
-    if (state.bufferUrl) {
-      const nextUrl = state.bufferUrl;
-      const startOffsetSeconds = state.offsetSeconds;
-      state.pendingPlay = true;
-      if (audio.context?.state === 'suspended') {
-        audio.context.resume();
-      }
-      void setFile(nextUrl, true, false, startOffsetSeconds).catch(() => {});
-      return true;
-    }
-    return false;
+    return Promise.resolve(playResult).then((playing) => ({
+      loaded: loadToken === state.loadToken && state.isLoaded,
+      playing: loadToken === state.loadToken && playing,
+    }));
   };
 
   const pause = () => {
+    state.playToken += 1;
     state.pendingPlay = false;
-    if (audio.isPlaying) {
-      state.offsetSeconds = getCurrentTime();
-      audio.pause();
+    state.isLoading = false;
+    if (Number.isFinite(mediaElement.currentTime)) {
+      state.offsetSeconds = mediaElement.currentTime;
     }
+    mediaElement.pause();
+    audio.isPlaying = false;
   };
+
+  const getCurrentTime = () =>
+    Number.isFinite(mediaElement.currentTime) && mediaElement.readyState > 0
+      ? mediaElement.currentTime
+      : state.offsetSeconds;
+
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+    pause();
+    mediaElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+    mediaElement.removeEventListener('canplay', onCanPlay);
+    mediaElement.removeEventListener('playing', onPlaying);
+    mediaElement.removeEventListener('pause', onPause);
+    mediaElement.removeEventListener('ended', onEnded);
+    mediaElement.removeEventListener('error', onError);
+    mediaElement.removeAttribute('src');
+    mediaElement.load();
+    revokeObjectUrl(activeObjectUrl);
+    activeObjectUrl = null;
+    audio.disconnect();
+  };
+
+  if (url) {
+    prepareFile(url, 0);
+  }
 
   return {
     audio,
@@ -195,10 +262,11 @@ export function createFileAudio({
     setFile,
     play,
     pause,
+    dispose,
     getCurrentTime,
     hasPendingPlay: () => state.pendingPlay,
     isLoading: () => state.isLoading,
     isLoaded: () => state.isLoaded,
-    isPlaying: () => audio.isPlaying,
+    isPlaying: () => !mediaElement.paused && !mediaElement.ended,
   };
 }
