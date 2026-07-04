@@ -27,7 +27,6 @@ export function createFileAudio({
     isLoaded: false,
     isLoading: false,
     pendingPlay: false,
-    revokeUrl: null,
     loadToken: 0,
     offsetSeconds: 0,
     offsetAtPlay: 0,
@@ -69,7 +68,6 @@ export function createFileAudio({
     state.isLoading = true;
     state.isLoaded = false;
     state.pendingPlay = playWhenReady;
-    state.revokeUrl = revokeOnLoad ? nextUrl : null;
     state.offsetSeconds = Math.max(0, startOffsetSeconds);
     state.offsetAtPlay = state.offsetSeconds;
     state.playStartContextTime = 0;
@@ -79,18 +77,32 @@ export function createFileAudio({
     if (typeof audio.offset === 'number') {
       audio.offset = 0;
     }
+    let urlReleased = false;
+    const releaseUrl = () => {
+      if (!revokeOnLoad || urlReleased) return;
+      URL.revokeObjectURL(nextUrl);
+      urlReleased = true;
+    };
     return new Promise((resolve) => {
-      loader.load(
-        nextUrl,
-        (buffer) => {
-          if (token !== state.loadToken) {
-            if (state.revokeUrl) {
-              URL.revokeObjectURL(state.revokeUrl);
-              state.revokeUrl = null;
-            }
-            resolve({ loaded: false, playing: audio.isPlaying });
-            return;
-          }
+      const handleError = () => {
+        releaseUrl();
+        if (token !== state.loadToken) {
+          resolve({ loaded: false, playing: audio.isPlaying });
+          return;
+        }
+        state.isLoading = false;
+        state.isLoaded = false;
+        state.pendingPlay = false;
+        state.bufferUrl = null;
+        resolve({ loaded: false, playing: false });
+      };
+      const handleLoad = (buffer) => {
+        if (token !== state.loadToken) {
+          releaseUrl();
+          resolve({ loaded: false, playing: audio.isPlaying });
+          return;
+        }
+        try {
           audio.setBuffer(buffer);
           if (typeof audio.offset === 'number') {
             audio.offset = resolveOffset(state.offsetSeconds);
@@ -98,10 +110,6 @@ export function createFileAudio({
           state.offsetSeconds = resolveOffset(state.offsetSeconds);
           state.isLoaded = true;
           state.isLoading = false;
-          if (state.revokeUrl) {
-            URL.revokeObjectURL(state.revokeUrl);
-            state.revokeUrl = null;
-          }
           if (state.pendingPlay) {
             if (audio.context?.state === 'suspended') {
               audio.context.resume();
@@ -111,25 +119,18 @@ export function createFileAudio({
             audio.play();
             state.pendingPlay = false;
           }
+          releaseUrl();
           resolve({ loaded: true, playing: audio.isPlaying });
-        },
-        undefined,
-        () => {
-          if (token !== state.loadToken) {
-            resolve({ loaded: false, playing: audio.isPlaying });
-            return;
-          }
-          state.isLoading = false;
-          state.isLoaded = false;
-          state.pendingPlay = false;
-          if (state.revokeUrl) {
-            URL.revokeObjectURL(state.revokeUrl);
-            state.revokeUrl = null;
-          }
-          resolve({ loaded: false, playing: false });
-        },
-      );
+        } catch {
+          handleError();
+        }
+      };
       state.bufferUrl = nextUrl;
+      try {
+        loader.load(nextUrl, handleLoad, undefined, handleError);
+      } catch {
+        handleError();
+      }
     });
   };
 
