@@ -9,7 +9,8 @@ export function createRenderer({
 } = {}) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha });
   renderer.setSize(width, height);
-  renderer.setPixelRatio(Math.min(pixelRatio, 2));
+  const safePixelRatio = Number.isFinite(pixelRatio) && pixelRatio > 0 ? pixelRatio : 1;
+  renderer.setPixelRatio(Math.min(safePixelRatio, 2));
   renderer.useLegacyLights = true;
   renderer.outputEncoding = THREE.sRGBEncoding;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
