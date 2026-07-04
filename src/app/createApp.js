@@ -978,7 +978,7 @@ export function createApp() {
       }
       ui.setPlayState(false);
       if (audio) {
-        audio.setFile(AUDIO_SETTINGS.url, false, false).catch(() => {});
+        void audio.setFile(AUDIO_SETTINGS.url, false, false).catch(() => {});
       }
       const defaultQuality = getDefaultQuality(defaultPresetKey);
       storedState.preset = defaultPresetKey;
