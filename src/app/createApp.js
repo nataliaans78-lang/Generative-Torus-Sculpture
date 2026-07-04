@@ -270,7 +270,7 @@ export function createApp() {
 
   if (audio && audio.listener) {
     camera.add(audio.listener);
-    audio.setFile(AUDIO_SETTINGS.url, false, false, initialAudioPlaybackState.positionSeconds);
+    audio.prepareFile(AUDIO_SETTINGS.url, initialAudioPlaybackState.positionSeconds);
   }
 
   const flow = createFlowMode({
@@ -975,11 +975,9 @@ export function createApp() {
 
       if (audio) {
         audio.pause();
+        audio.prepareFile(AUDIO_SETTINGS.url, 0);
       }
       ui.setPlayState(false);
-      if (audio) {
-        void audio.setFile(AUDIO_SETTINGS.url, false, false).catch(() => {});
-      }
       const defaultQuality = getDefaultQuality(defaultPresetKey);
       storedState.preset = defaultPresetKey;
       storedState.quality = defaultQuality;

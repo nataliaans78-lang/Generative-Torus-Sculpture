@@ -54,6 +54,17 @@ export function createFileAudio({
     return resolveOffset(state.offsetAtPlay + elapsed);
   };
 
+  const prepareFile = (nextUrl, startOffsetSeconds = 0) => {
+    state.loadToken += 1;
+    state.bufferUrl = nextUrl || null;
+    state.isLoaded = false;
+    state.isLoading = false;
+    state.pendingPlay = false;
+    state.offsetSeconds = Math.max(0, startOffsetSeconds);
+    state.offsetAtPlay = state.offsetSeconds;
+    state.playStartContextTime = 0;
+  };
+
   const setFile = (
     nextUrl,
     playWhenReady = false,
@@ -151,8 +162,18 @@ export function createFileAudio({
       state.pendingPlay = false;
       return true;
     }
-    if (state.bufferUrl) {
+    if (state.isLoading) {
       state.pendingPlay = true;
+      return true;
+    }
+    if (state.bufferUrl) {
+      const nextUrl = state.bufferUrl;
+      const startOffsetSeconds = state.offsetSeconds;
+      state.pendingPlay = true;
+      if (audio.context?.state === 'suspended') {
+        audio.context.resume();
+      }
+      void setFile(nextUrl, true, false, startOffsetSeconds).catch(() => {});
       return true;
     }
     return false;
@@ -170,11 +191,13 @@ export function createFileAudio({
     audio,
     analyser,
     listener,
+    prepareFile,
     setFile,
     play,
     pause,
     getCurrentTime,
     hasPendingPlay: () => state.pendingPlay,
+    isLoading: () => state.isLoading,
     isLoaded: () => state.isLoaded,
     isPlaying: () => audio.isPlaying,
   };
