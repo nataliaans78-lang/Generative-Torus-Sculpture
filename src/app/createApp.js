@@ -149,10 +149,12 @@ export function createApp() {
   });
   camera.lookAt(new THREE.Vector3(...CAMERA_SETTINGS.target));
 
+  const initialPixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
   const renderer = createRenderer({
     width: sizes.width,
     height: sizes.height,
-    pixelRatio: window.devicePixelRatio,
+    pixelRatio: initialPixelRatio,
     parent: document.body,
   });
   const postprocessing = createPostprocessing({
@@ -161,6 +163,7 @@ export function createApp() {
     camera,
     width: sizes.width,
     height: sizes.height,
+    pixelRatio: initialPixelRatio,
   });
 
   const controls = new OrbitControls(camera, renderer.domElement);
@@ -418,7 +421,13 @@ export function createApp() {
     const desktopPixelRatioCap = 1.5;
     const qualityCap = getAdaptivePixelRatioCap();
     const runtimeCap = isMobileDevice() ? qualityCap : Math.min(qualityCap, desktopPixelRatioCap);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, runtimeCap));
+    const safeDevicePixelRatio =
+      Number.isFinite(window.devicePixelRatio) && window.devicePixelRatio > 0
+        ? window.devicePixelRatio
+        : 1;
+    const nextPixelRatio = Math.min(safeDevicePixelRatio, runtimeCap);
+    renderer.setPixelRatio(nextPixelRatio);
+    postprocessing.setPixelRatio(nextPixelRatio);
   };
 
   const applyQualityLevel = (level) => {
