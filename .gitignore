@@ -22,3 +22,14 @@ pnpm-debug.log*
 .stylelintcache
 .vite
 coverage/
+
+# RM Build and distribution directories
+build/
+dist/
+node_modules/
+.vite/
+.env
+.env.local
+.DS_Store
+Thumbs.db
+*.log
