@@ -961,7 +961,7 @@ export function createApp() {
         ui.setPlayState(false);
       }
     },
-    onResetAll: async () => {
+    onResetAll: () => {
       audioUploadToken += 1;
       STORAGE_KEYS.forEach((key) => window.localStorage.removeItem(key));
       markInteracted();
@@ -975,9 +975,11 @@ export function createApp() {
 
       if (audio) {
         audio.pause();
-        await audio.setFile(AUDIO_SETTINGS.url, false, false);
       }
       ui.setPlayState(false);
+      if (audio) {
+        void audio.setFile(AUDIO_SETTINGS.url, false, false).catch(() => {});
+      }
       const defaultQuality = getDefaultQuality(defaultPresetKey);
       storedState.preset = defaultPresetKey;
       storedState.quality = defaultQuality;

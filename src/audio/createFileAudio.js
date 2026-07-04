@@ -174,7 +174,7 @@ export function createFileAudio({
     play,
     pause,
     getCurrentTime,
-    hasPendingPlay: () => state.pendingPlay || state.isLoading,
+    hasPendingPlay: () => state.pendingPlay,
     isLoaded: () => state.isLoaded,
     isPlaying: () => audio.isPlaying,
   };
