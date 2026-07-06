@@ -76,10 +76,7 @@ const clampGridCount = (gridCount, layoutProfile = getLayoutProfile()) => {
     typeof gridCount === 'number' && Number.isFinite(gridCount)
       ? gridCount
       : layoutProfile.gridDefault;
-  return Math.max(
-    layoutProfile.gridMin,
-    Math.min(layoutProfile.gridMax, Math.floor(fallback)),
-  );
+  return Math.max(layoutProfile.gridMin, Math.min(layoutProfile.gridMax, Math.floor(fallback)));
 };
 
 function resolvedGridDimensions(gridCount, layoutProfile = getLayoutProfile()) {
@@ -114,6 +111,41 @@ function resolvedGridDimensions(gridCount, layoutProfile = getLayoutProfile()) {
     ny: count,
     nz: Math.max(2, count),
   };
+}
+
+function disposeMaterial(material, textures) {
+  if (!material) return;
+
+  for (const value of Object.values(material)) {
+    if (value?.isTexture) {
+      textures.add(value);
+    }
+  }
+
+  material.dispose?.();
+}
+
+function disposeSceneResources(root) {
+  const geometries = new Set();
+  const materials = new Set();
+  const textures = new Set();
+
+  root.traverse((object) => {
+    if (object.geometry) {
+      geometries.add(object.geometry);
+    }
+
+    const material = object.material;
+    if (Array.isArray(material)) {
+      material.forEach((entry) => materials.add(entry));
+    } else if (material) {
+      materials.add(material);
+    }
+  });
+
+  materials.forEach((material) => disposeMaterial(material, textures));
+  geometries.forEach((geometry) => geometry.dispose?.());
+  textures.forEach((texture) => texture.dispose?.());
 }
 
 export function createApp() {
@@ -220,15 +252,9 @@ export function createApp() {
   window.addEventListener('pointerleave', handlePointerLeave, { passive: true });
 
   const lights = createLights(scene, LIGHT_SETTINGS);
-  // expose for quick inspection in DevTools (window.__deepWalls / window.__scene)
+  // expose for quick inspection in DevTools
   if (typeof window !== 'undefined') {
     window.__scene = scene;
-    window.__deepWalls = {
-      left: lights.deepWallLeft,
-      right: lights.deepWallRight,
-      leftTarget: lights.deepWallLeftTarget,
-      rightTarget: lights.deepWallRightTarget,
-    };
   }
   const audio = createFileAudio({
     listener: new THREE.AudioListener(),
@@ -745,7 +771,7 @@ export function createApp() {
     const layoutProfile = getLayoutProfile(key);
     const presetGridCount = isMobileDevice()
       ? layoutProfile.gridDefault
-      : preset.grid.gridCount ?? layoutProfile.gridDefault;
+      : (preset.grid.gridCount ?? layoutProfile.gridDefault);
     const presetState = {
       presetKey: key,
       flowEnabled: preset.flowEnabled,
@@ -757,11 +783,11 @@ export function createApp() {
         fillIntensity: preset.lighting.fillIntensity ?? 0,
         centerIntensity: preset.lighting.centerIntensity ?? (key === 'DEEP_BLUE' ? 10 : 0),
         spotIntensity: preset.lighting.flowSpotIntensity,
-      flowPulseIntensity: preset.lighting.flowPulseIntensity,
-      spotFocus: preset.lighting.spotFocus,
-      flowAngle: preset.lighting.flowAngle,
-      lightMotionSpeed: preset.lighting.flowSpeed,
-      audioReactiveScale: controlsState.state.lighting.audioReactiveScale ?? 1,
+        flowPulseIntensity: preset.lighting.flowPulseIntensity,
+        spotFocus: preset.lighting.spotFocus,
+        flowAngle: preset.lighting.flowAngle,
+        lightMotionSpeed: preset.lighting.flowSpeed,
+        audioReactiveScale: controlsState.state.lighting.audioReactiveScale ?? 1,
       },
       scene: {
         gridCount: clampGridCount(presetGridCount, layoutProfile),
@@ -1199,9 +1225,6 @@ export function createApp() {
     torusCluster.mesh.rotation.y +=
       layoutState.rotationSpeed * GLOBAL_ROTATION_SCALE * deltaTime + touchSpinVelocity;
     const isDeep = controlsState.state.presetKey === 'DEEP_BLUE';
-    if (isDeep) {
-      lights.tickDeepWallSpots?.(elapsed);
-    }
     const targetMouseX = isDeep ? 0 : hoverPointer.x * 0.24;
     const targetMouseY = isDeep ? 0 : hoverPointer.y * 0.18;
     targetMouseOffset.set(targetMouseX, targetMouseY, 0);
@@ -1232,16 +1255,8 @@ export function createApp() {
       touchSpinVelocity = 0;
     }
     const audioActive = Boolean(reactive?.audioActive);
-    const exposureBase = controlsState.state.flowEnabled
-      ? audioActive
-        ? 0.97
-        : 1.0
-      : 1.08;
-    const exposureScale = controlsState.state.flowEnabled
-      ? audioActive
-        ? 0.35
-        : 0.6
-      : 0;
+    const exposureBase = controlsState.state.flowEnabled ? (audioActive ? 0.97 : 1.0) : 1.08;
+    const exposureScale = controlsState.state.flowEnabled ? (audioActive ? 0.35 : 0.6) : 0;
     const exposure = controlsState.state.flowEnabled
       ? THREE.MathUtils.clamp(
           exposureBase + (reactive?.mid ?? 0) * exposureScale,
@@ -1249,8 +1264,7 @@ export function createApp() {
           audioActive ? 1.08 : 1.25,
         )
       : exposureBase;
-    const deepBoost =
-      controlsState.state.presetKey === 'DEEP_BLUE' ? 1.05 : 1;
+    const deepBoost = controlsState.state.presetKey === 'DEEP_BLUE' ? 1.05 : 1;
     renderer.toneMappingExposure = THREE.MathUtils.lerp(0.92, exposure * deepBoost, startupBlend);
     postprocessing.update(elapsed, reactive);
     controls.update();
@@ -1313,6 +1327,28 @@ export function createApp() {
     controls.dispose?.();
     audio?.dispose?.();
     ui?.dispose?.();
+    flow?.dispose?.();
+
+    torusCluster?.dispose?.();
+    torusCluster = null;
+
+    torusResourcesCache.forEach((resources) => {
+      resources?.dispose?.();
+      resources?.material?.dispose?.();
+      resources?.stripeTexture?.dispose?.();
+    });
+    torusResourcesCache.clear();
+
+    defaultGradientBackgroundTexture.dispose?.();
+
+    postprocessing.dispose?.();
+
+    disposeSceneResources(scene);
+
+    renderer.dispose?.();
+    renderer.forceContextLoss?.();
+
+    renderer.domElement?.parentNode?.removeChild(renderer.domElement);
   };
 
   return { scene, camera, renderer, controls, dispose };
