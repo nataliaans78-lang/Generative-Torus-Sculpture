@@ -252,10 +252,6 @@ export function createApp() {
   window.addEventListener('pointerleave', handlePointerLeave, { passive: true });
 
   const lights = createLights(scene, LIGHT_SETTINGS);
-  // expose for quick inspection in DevTools
-  if (typeof window !== 'undefined') {
-    window.__scene = scene;
-  }
   const audio = createFileAudio({
     listener: new THREE.AudioListener(),
     url: AUDIO_SETTINGS.url,
