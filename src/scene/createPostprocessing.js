@@ -49,7 +49,14 @@ const VignetteGrainShader = {
   `,
 };
 
-export function createPostprocessing({ renderer, scene, camera, width, height, pixelRatio = 1 } = {}) {
+export function createPostprocessing({
+  renderer,
+  scene,
+  camera,
+  width,
+  height,
+  pixelRatio = 1,
+} = {}) {
   const composer = new EffectComposer(renderer);
   if (typeof composer.setPixelRatio === 'function') {
     composer.setPixelRatio(pixelRatio);
@@ -74,6 +81,21 @@ export function createPostprocessing({ renderer, scene, camera, width, height, p
     } else {
       bloomQualityScale = 1;
     }
+  };
+
+  let disposed = false;
+  const dispose = () => {
+    if (disposed) return;
+    disposed = true;
+
+    for (const pass of composer.passes ?? []) {
+      pass.dispose?.();
+      pass.fsQuad?.dispose?.();
+    }
+
+    composer.renderTarget1?.dispose?.();
+    composer.renderTarget2?.dispose?.();
+    composer.dispose?.();
   };
 
   return {
@@ -113,5 +135,6 @@ export function createPostprocessing({ renderer, scene, camera, width, height, p
     render() {
       composer.render();
     },
+    dispose,
   };
 }

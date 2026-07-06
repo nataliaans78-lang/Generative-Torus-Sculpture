@@ -25,29 +25,6 @@ export function createLights(scene, settings) {
   deepBlueAccentViolet.position.set(-4.2, 1.8, -3.1);
   scene.add(deepBlueAccentViolet);
 
-  // subtle wall accents for Deep Blue
-  // Deep Blue wall spots placeholders (kept off)
-  const deepWallLeft = new THREE.SpotLight(0x76ccfc, 0, 18, Math.PI / 2.4, 0.5, 2);
-  deepWallLeft.name = 'deepWallLeft';
-  const deepWallRight = new THREE.SpotLight(0x76ccfc, 0, 18, Math.PI / 2.4, 0.5, 2);
-  deepWallRight.name = 'deepWallRight';
-  deepWallLeft.position.set(-6.0, 1.1, 0.7);
-  deepWallRight.position.set(6.0, 1.1, -0.7);
-  const deepWallLeftTarget = new THREE.Object3D();
-  const deepWallRightTarget = new THREE.Object3D();
-  deepWallLeftTarget.name = 'deepWallLeftTarget';
-  deepWallRightTarget.name = 'deepWallRightTarget';
-  deepWallLeftTarget.position.set(-8.4, 0.9, -1.4);
-  deepWallRightTarget.position.set(8.4, 0.9, 1.2);
-  deepWallLeft.target = deepWallLeftTarget;
-  deepWallRight.target = deepWallRightTarget;
-  deepWallLeft.angle = Math.PI / 2.4;
-  deepWallRight.angle = Math.PI / 2.4;
-  scene.add(deepWallLeft, deepWallRight, deepWallLeftTarget, deepWallRightTarget);
-
-  // state for deep wall motion
-  let deepWallActive = false;
-
   const centerDistance = settings.center?.distance ?? 9;
   const centerDecay = settings.center?.decay ?? 2;
   const centerAngle = settings.center?.angle ?? Math.PI / 8;
@@ -122,52 +99,27 @@ export function createLights(scene, settings) {
   const setFlowAccents = (presetKey, introPhase = 0) => {
     const scale = 1 + introPhase * 0.2;
     if (presetKey === 'DEEP_BLUE') {
-      deepWallActive = false;
       deepBlueAccentBlue.intensity = 0;
       deepBlueAccentViolet.intensity = 0;
       ambientLight.intensity = ambientBase * (1 + introPhase * 0.12);
-      deepWallLeft.intensity = 0;
-      deepWallRight.intensity = 0;
       return;
     }
-    deepWallActive = false;
     if (presetKey === 'FLOW_SOFT') {
       deepBlueAccentBlue.intensity = 1.18 * scale;
       deepBlueAccentViolet.intensity = 0.48 * scale;
       ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
-      deepWallLeft.intensity = 0;
-      deepWallRight.intensity = 0;
       return;
     }
     if (presetKey === 'FLOW_STRONG') {
       deepBlueAccentBlue.intensity = 0.72 * scale;
       deepBlueAccentViolet.intensity = 1.25 * scale;
       ambientLight.intensity = ambientBase * (1 + introPhase * 0.15);
-      deepWallLeft.intensity = 0;
-      deepWallRight.intensity = 0;
       return;
     }
     // fallback: disable for other presets (Deep Blue handled separately)
     deepBlueAccentBlue.intensity = 0;
     deepBlueAccentViolet.intensity = 0;
     ambientLight.intensity = ambientBase;
-    deepWallLeft.intensity = 0;
-    deepWallRight.intensity = 0;
-  };
-
-  // gentle orbit for Deep Blue wall spots (smaller & darker)
-  const tickDeepWallSpots = (time = 0) => {
-    if (!deepWallActive) return;
-    const t = time;
-    const swingX = Math.sin(t * 0.08) * 0.6;
-    const swingZ = Math.cos(t * 0.095) * 0.55;
-    const bobY = Math.sin(t * 0.11) * 0.14;
-
-    deepWallLeft.position.set(-6.0 + swingX, 1.1 + bobY * 0.6, 0.7 + swingZ * 0.8);
-    deepWallRight.position.set(6.0 - swingX, 1.1 - bobY * 0.6, -0.7 - swingZ * 0.8);
-
-    deepWallLeftTarget.position.set(-8.4 + swingX * 0.9, 0.9, -1.4 + swingZ * 0.9);
-    deepWallRightTarget.position.set(8.4 - swingX * 0.9, 0.9, 1.2 - swingZ * 0.9);
   };
 
   return {
@@ -177,12 +129,7 @@ export function createLights(scene, settings) {
     fillLight,
     deepBlueAccentBlue,
     deepBlueAccentViolet,
-    deepWallLeft,
-    deepWallRight,
-    deepWallLeftTarget,
-    deepWallRightTarget,
     setFlowAccents,
-    tickDeepWallSpots,
     centerLight,
     topEdgeLight,
     lowEdgeLight,
